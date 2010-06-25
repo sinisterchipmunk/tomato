@@ -28,6 +28,9 @@ extern VALUE cTomato;
 extern VALUE cTomatoError;
 extern VALUE rb_cTime;
 
+/* in object_chain.cpp */
+extern Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain);
+
 /* in conversions_to_rb.cpp */
 extern VALUE ruby_value_of(V8Tomato *tomato, Handle<Value> result);
 extern void  inspect_js(V8Tomato *tomato, Handle<Value> obj);

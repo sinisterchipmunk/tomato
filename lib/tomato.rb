@@ -20,13 +20,25 @@ class Tomato
   #   
   # Both of the above examples would result in a call to my_funky_object.inspect.
   #
+  # You can also pass a :to option to bind the method to a specific object. If the specified object chain
+  # does not exist, Tomato will generate generic objects to suit. Examples:
+  # 
+  #   t.bind_method(:inspect, my_funky_object, :to => "funky")
+  #   t.run("funky.inspect();")
+  # 
+  #   t.bind_method(:inspect, my_funky_object, :to => "funky_objects.my_object")
+  #   t.run("funky_objects.my_object.inspect();")
+  #
   def bind_method(method_name, *args)
     options = args.extract_options!
     receiver = options[:object] || args.first || self
-    # Let C take it from here.
     receivers << receiver unless receivers.include?(receiver)
-    _bind_method(method_name, receivers.index(receiver))
+    chain = options[:to] ? options[:to].split(/\./) : nil
+    # Bind the method to JS.
+    _bind_method(method_name, receivers.index(receiver), chain)
   end
+  
+  alias bind bind_method
   
   def inspect
     "#<Tomato>"

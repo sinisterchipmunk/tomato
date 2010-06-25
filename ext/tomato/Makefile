@@ -102,8 +102,8 @@ extout_prefix =
 target_prefix = 
 LOCAL_LIBS = 
 LIBS = $(LIBRUBYARG_SHARED) -lobjc -lpthread  -lpthread -ldl -lobjc   -lv8
-SRCS = binding_methods.cpp conversions_to_js.cpp conversions_to_rb.cpp errors.cpp tomato.cpp v8.cpp
-OBJS = binding_methods.o conversions_to_js.o conversions_to_rb.o errors.o tomato.o v8.o
+SRCS = binding_methods.cpp conversions_to_js.cpp conversions_to_rb.cpp errors.cpp object_chain.cpp tomato.cpp v8.cpp
+OBJS = binding_methods.o conversions_to_js.o conversions_to_rb.o errors.o object_chain.o tomato.o v8.o
 TARGET = tomato
 DLLIB = $(TARGET).bundle
 EXTSTATIC = 
@@ -183,6 +183,7 @@ binding_methods.o: binding_methods.cpp tomato.h
 conversions_to_js.o: conversions_to_js.cpp tomato.h
 conversions_to_rb.o: conversions_to_rb.cpp tomato.h
 errors.o: errors.cpp tomato.h
+object_chain.o: object_chain.cpp tomato.h
 tomato.o: tomato.cpp tomato.h
 v8.o: v8.cpp tomato.h
 

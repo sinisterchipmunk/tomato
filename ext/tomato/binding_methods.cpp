@@ -87,15 +87,16 @@ int store_rb_message(const Arguments &args, V8Tomato **out_tomato, VALUE *out_re
 
 VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
 {
-  if (argc != 2) rb_raise(rb_eArgError, "Expected: _bind_method(method_name<str>, receiver_index<int>)");
+  if (argc != 3) rb_raise(rb_eArgError,
+    "Expected: _bind_method(method_name<str>, receiver_index<int>, object_chain<array[string] or nil>)");
   const char *method_name = rb_id2name(rb_to_id(argv[0]));
   
   V8Tomato *tomato;
   Data_Get_Struct(self, V8Tomato, tomato);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato->context);  
-  Handle<Value> value = tomato->context->Global();
+  Context::Scope context_scope(tomato->context);
+  Handle<Value> value = find_or_create_object_chain(tomato, argv[2]);
   if (value->IsObject())
   {
     Handle<Object> object = Handle<Object>::Cast(value);

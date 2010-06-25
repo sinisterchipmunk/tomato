@@ -20,20 +20,9 @@ hope to release it as a real gem after it's reached a sufficient level of functi
 When JS code is executed, it'll do its thing internally and then return the result:
 
   tomato.run("(1+1);") # => 2
-  
-When JS code encounters an error of some kind, it'll get raised in Ruby:
 
-  tomato.run("throw 'error';")
-  
-  # Produces:
-  # 
-  # Tomato::Error: (dynamic):error
-  # throw 'error';
-  # ^
-  #
-  #     from (irb):3:in `run'
-  #	    from (irb):3
-  
+==== Bindings
+
 You can bind Ruby methods to JavaScript, as well. You can bind an instance method of Tomato like so:
 
   tomato.bind_method(:inspect)
@@ -44,17 +33,29 @@ Or, perhaps more usefully, you can bind an instance method of some other object:
   tomato.bind_method(:inspect, 5)
   tomato.run("inspect();")  #=> "5"
   
-Moreover, arguments are accepted, too:
+It's also easy to bind methods to arbitrary JavaScript objects. If a JS object in the chain doesn't exist, Tomato will
+silently generate it for you on-the-fly:
 
-  tomato.bind_method(:say, self)
+
   def say(something)
     puts something
   end
-  tomato.run "say('Hi there!');"
+  
+  tomato.bind_method(:say, self, :to => "person.mouth")
+  
+  # Tomato generated both the "person" and "mouth" objects for us:
+  tomato.run "person.mouth.say('Hello there');"
+
+  # Produces:
+  #
+  # Hello there
+  #  => nil
+  
+  puts tomato.run("this")
   
   # Produces:
   #
-  # Hi there!
+  # {"person":{"mouth":{}}}
   #  => nil 
 
 In the spirit of true Ruby dynamicism, (is that a word?), you can feel free to re-bind new methods over old ones:
@@ -68,20 +69,20 @@ In the spirit of true Ruby dynamicism, (is that a word?), you can feel free to r
   tomato.run("say('something');")
   #=> something
   
-==== More Examples
+==== Error Handling
 
-Here's a set of examples which bind a Ruby method to the JavaScript context with various different results: 
+When JS code encounters an error of some kind, it'll get raised in Ruby:
 
-  tomato.bind_method(:say_hello, self)
-  def say_hello
-    puts "Hi there!"
-  end
-  tomato.run("say_hello();")
+  tomato.run("throw 'error';")
   
   # Produces:
+  # 
+  # Tomato::Error: (dynamic):error
+  # throw 'error';
+  # ^
   #
-  # Hi there!
-  #  => nil
+  #     from (irb):3:in `run'
+  #	    from (irb):3
   
 You can also catch Ruby errors in JavaScript:
 
@@ -112,8 +113,6 @@ Or let them bubble up to Ruby:
   # Error: Not what I meant!
   #  => nil 
 
-That's all I've implemented so far, but I think it looks pretty cool.
-
 === Object Types
 
 Some objects in Ruby don't exist in JS. So far the ones I've implemented are Hashes and Symbols.
@@ -121,7 +120,17 @@ Some objects in Ruby don't exist in JS. So far the ones I've implemented are Has
 ==== Symbols
 
 A Symbol is converted to an object in JS with a "symbol" attribute and a "toString()" method. That same object, if
-returned to Ruby, is converted back to a Symbol.
+returned to Ruby, is converted back to a Symbol. Examples:
+
+  def fetch_a_symbol
+    :a_symbol
+  end
+  
+  t = Tomato.new
+  t.bind_method(:fetch_a_symbol, self)
+  t.run("fetch_a_symbol()")            #=> :a_symbol 
+  t.run("fetch_a_symbol().symbol")     #=> "a_symbol"
+  t.run("fetch_a_symbol().toString()") #=> "a_symbol"
  
 
 ==== Hashes

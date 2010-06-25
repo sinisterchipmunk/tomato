@@ -68,6 +68,7 @@ static VALUE fTomato_version(VALUE self)
   return rb_str_new2(V8::GetVersion());
 }
 
+/* Runs a String of JavaScript code. */
 static VALUE fTomato_run(int argc, VALUE *argv, VALUE self)
 {
   if (argc == 0)
