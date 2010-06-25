@@ -69,6 +69,18 @@ In the spirit of true Ruby dynamicism, (is that a word?), you can feel free to r
   tomato.run("say('something');")
   #=> something
   
+You can also easily bind an entire object to JavaScript:
+
+  # By default objects are mapped to 'ruby.[object_class_name]'
+  tomato.bind_object(Time.now)
+  tomato.run("ruby.time.to_s();")
+  #=> "2010-06-25 18:12:23 -0400"
+  
+  # Or give it an object name or chain of names:
+  tomato.bind_object(Time.now, "time.current")
+  tomato.run("time.current.to_s();")
+  #=> "2010-06-25 18:12:23 -0400"
+
 ==== Error Handling
 
 When JS code encounters an error of some kind, it'll get raised in Ruby:

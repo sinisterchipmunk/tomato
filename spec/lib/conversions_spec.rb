@@ -87,28 +87,5 @@ describe "Tomato conversions" do
     it "should handle symbols" do
       handle(:symbol).should == :symbol
     end
-=begin
-    case T_NIL     :
-    case T_OBJECT  :
-    //case T_CLASS   :
-    //case T_MODULE  :
-    case T_FLOAT   :
-    case T_STRING  :
-    case T_REGEXP  :
-    case T_ARRAY   :
-    case T_HASH    :
-    //case T_STRUCT  :
-    case T_BIGNUM  :
-    case T_FIXNUM  :
-    //case T_COMPLEX :
-    //case T_RATIONAL:
-    //case T_FILE    :
-    case T_TRUE    :
-    case T_FALSE   :
-    //case T_DATA    :
-    case T_SYMBOL  :
-      symbol_from(object)
-      break;
-=end
   end
 end

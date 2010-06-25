@@ -4,6 +4,7 @@ static Handle<Value> js_array_from(V8Tomato *tomato, VALUE value);
 static Handle<Value> js_hash_from(V8Tomato *tomato, VALUE value);
 static Handle<Value> js_symbol_to_string(const Arguments& args);
 static Handle<Value> js_symbol_from(VALUE value);
+static Handle<Value> js_date_from(VALUE value);
 
 Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value)
 {
@@ -32,6 +33,16 @@ Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value)
       else return js_symbol_from(value);
       //return String::New(rb_id2name(SYM2ID(value)));
   };
+  
+  /* take care of some JS types that aren't reflected above */
+  if (rb_funcall(value, rb_intern("kind_of?"), 1, rb_const_get(rb_cObject, rb_intern("Date"))) == Qtrue ||
+      rb_funcall(value, rb_intern("kind_of?"), 1, rb_const_get(rb_cObject, rb_intern("Time"))) == Qtrue ||
+      rb_funcall(value, rb_intern("kind_of?"), 1, rb_const_get(rb_cObject, rb_intern("DateTime"))) == Qtrue ||
+      rb_funcall(value, rb_intern("kind_of?"), 1, rb_const_get(rb_const_get(rb_cObject, rb_intern("ActiveSupport")), rb_intern("TimeWithZone"))) == Qtrue)
+  {
+    return js_date_from(value);
+  }
+  
   return inspect_rb(value);  
 }
 
@@ -112,66 +123,9 @@ Handle<Value> inspect_rb(VALUE value)
   return String::New(StringValuePtr(string));
 }
 
-/*
-Handle<Value> v8_value_of(V8Tomato *tomato, VALUE object)
+Handle<Value> js_date_from(VALUE value)
 {
-
-  switch(TYPE(object))
-  {
-    case T_NIL     :
-    case T_OBJECT  :
-    //case T_CLASS   :
-    //case T_MODULE  :
-    case T_FLOAT   :
-    case T_STRING  :
-    case T_REGEXP  :
-    case T_ARRAY   :
-    case T_HASH    :
-    //case T_STRUCT  :
-    case T_BIGNUM  :
-    case T_FIXNUM  :
-    //case T_COMPLEX :
-    //case T_RATIONAL:
-    //case T_FILE    :
-    case T_TRUE    :
-    case T_FALSE   :
-    //case T_DATA    :
-    case T_SYMBOL  :
-      symbol_from(object)
-      break;
-    default:         string_from(object);
-  };
+  VALUE ival = rb_funcall(value, rb_intern("to_f"), 0);
+  double time = NUM2DBL(ival) * 1000.0;
+  return Date::New(time);
 }
-*/
-/*
-  if (result->IsUndefined()) { return ID2SYM(rb_intern("undefined")); }
-  if (result->IsNull())      { return Qnil; }
-  if (result->IsTrue())      { return Qtrue; }
-  if (result->IsFalse())     { return Qfalse; }
-  if (result->IsString())    { return ruby_string_from(result); }
-  if (result->IsFunction())  { return ruby_string_from(result); }
-  if (result->IsArray())     { Handle<Array> array = Handle<Array>::Cast(result); return ruby_array_from(tomato, array); }
-  if (result->IsNumber())    { return ruby_numeric_from(result); }
-  if (result->IsDate())      { return ruby_date_from(result); }
-    
-
-  if (result->IsObject())
-  {
-    Handle<Value> json = tomato->context->Global()->Get(String::New("JSON"));
-    if (json->IsObject())
-    {
-      Handle<Value> stringify = Handle<Object>::Cast(json)->Get(String::New("stringify"));
-      if (stringify->IsFunction())
-      {
-        String::Utf8Value str(Handle<Function>::Cast(stringify)->Call(
-          Handle<Object>::Cast(json),
-          1, 
-          &result
-        ));
-        return rb_str_new2(ToCString(str));
-      }
-    }
-  }
-  return Qnil;
-}
-*/

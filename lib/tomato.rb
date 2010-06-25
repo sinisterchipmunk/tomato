@@ -38,6 +38,45 @@ class Tomato
     _bind_method(method_name, receivers.index(receiver), chain)
   end
   
+  # Binds an entire Ruby object to the specified JavaScript object chain.
+  #
+  # If the chain is omitted, and the object itself is a Class, then the chain will be the qualified name
+  # of the class.
+  #
+  # Example:
+  #  tomato.bind_object(Time)
+  #  tomato.run("Time.now()")
+  #   #=> 2010-06-25 18:02:52 -0400
+  #
+  # The same goes for Modules.
+  #
+  # Finally, if the chain is omitted and the object is an instance of a Class and not a Class itself, then
+  # the object will be bound to "ruby.[unqualified_name]". If the unqualified name is already in use, it will
+  # be overwritten.
+  #
+  # Example:
+  #  time = Time.now
+  #  tomato.bind_object(time)
+  #  tomato.run("ruby.time.to_s()")
+  #   #=> "2010-06-25 18:08:06 -0400"
+  #  tomato.bind_object(time)
+  #  tomato.run("ruby.time.to_s()")
+  #   #=> "2010-06-25 18:08:29 -0400"
+  def bind_object(obj, chain = nil)
+    if (obj.kind_of?(Class) || obj.kind_of?(Module)) && chain.nil?
+      chain = obj.name.gsub(/\:\:/, '.')
+      chain = chain[1..-1] if chain[0] == ?.
+    elsif chain.nil?
+      unqualified_name = obj.class.name.gsub(/.*\:\:([^\:])?$/, '\1').underscore
+      chain = "ruby.#{unqualified_name}"
+    end
+    
+    obj.public_methods.each do |method_name|
+      bind_method(method_name, obj, :to => chain)
+    end
+    obj
+  end
+  
   alias bind bind_method
   
   def inspect
