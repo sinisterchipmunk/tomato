@@ -2,6 +2,12 @@
 
 Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.
 
+== IMPORTANT
+
+I haven't even added a version number yet because it's WAAAY too early for that. This is some pretty cool code IMO,
+but keep in mind if you want to check it out that it's still development code (not even pre-Alpha). I do hope to
+release it as a real gem after it's reached a sufficient level of functionality.
+
 == Examples
 
 === Instantiation
@@ -113,12 +119,6 @@ Too early to tell. Benchmarking will be done as I get closer to a real release.
 Since V8's JavaScript code is compiled into byte code, this MAY (untested) have a positive impact on performance
 in some applications. Just translate your code to JavaScript and let V8 compile it to byte code. I'm hoping for some
 cool results.
-
-== IMPORTANT
-
-I haven't even added a version number yet because it's WAAAY too early for that. This is some pretty cool code IMO,
-but keep in mind if you want to check it out that it's still development code (not even pre-Alpha). I do hope to
-release it as a real gem after it's reached a sufficient level of functionality.
 
 == Note on Patches/Pull Requests
  
