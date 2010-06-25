@@ -117,8 +117,12 @@ recommended), it should work. Make sure Python is in your path.
  
 == Installation
 
+To install the latest and greatest prerelease:
+  gem install tomato --pre
+
+To install the current stable release:
   gem install tomato
-  
+
 That should be all there is to it.
    
 == Performance
