@@ -6,17 +6,19 @@ begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
     gem.name = "tomato"
-    gem.summary = %Q{TODO: one-line summary of your gem}
-    gem.description = %Q{TODO: longer description of your gem}
+    gem.summary = %Q{Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.}
+    gem.description = %Q{Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.}
     gem.email = "sinisterchipmunk@gmail.com"
-    gem.homepage = "http://github.com/sinisterchipmunk/tomato"
+    gem.homepage = "http://www.thoughtsincomputation.com"
     gem.authors = ["Colin MacKenzie IV"]
     gem.add_development_dependency "rspec", ">= 1.3.0"
+    gem.files = FileList['**/*']
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
   puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
+  return
 end
 
 Spec::Rake::SpecTask.new(:test) do |test|
@@ -49,6 +51,7 @@ namespace :make do
   
   desc "Build binaries"
   task :build do
+    ENV['FAST'] = '1'
     chdir(File.expand_path("../ext/tomato", __FILE__)) do
       unless system("gcc -MM *.cpp > depend") && system("ruby extconf.rb") && system("make all")
         raise "Build failed"

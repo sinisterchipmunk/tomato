@@ -19,7 +19,7 @@ rdoc
 pkg
 
 ## PROJECT::SPECIFIC
-
+ext/tomato/external/build
 .idea
 *.o
 *.log

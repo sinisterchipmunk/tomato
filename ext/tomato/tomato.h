@@ -7,6 +7,11 @@
 
 using namespace v8;
 
+/* for 1.8.7 compatibility */
+#ifndef DBL2NUM
+  #define DBL2NUM(n) rb_float_new(n)
+#endif
+
 typedef VALUE (ruby_method_vararg)(...);
 typedef VALUE (ruby_method_1)(VALUE);
 

@@ -4,9 +4,9 @@ Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript 
 
 == IMPORTANT
 
-I haven't even added a version number yet because it's WAAAY too early for that. This is some pretty cool code IMO,
-but keep in mind if you want to check it out that it's still development code (not even pre-Alpha). I do hope to
-release it as a real gem after it's reached a sufficient level of functionality.
+I've left the version number in the 0.0.x range because it's WAAAY too early for a proper release. This is some pretty
+cool code IMO, but keep in mind if you want to check it out that it's still development code (not even pre-Alpha). I do
+hope to release it as a real gem after it's reached a sufficient level of functionality.
 
 == Examples
 
@@ -33,7 +33,6 @@ When JS code encounters an error of some kind, it'll get raised in Ruby:
   #
   #     from (irb):3:in `run'
   #	    from (irb):3
-  #	    from /Users/colin/.rvm/rubies/ruby-1.9.1-p378/bin/irb:17:in `<main>'
   
 You can bind Ruby methods to JavaScript, as well. CURRENTLY only Tomato instance methods are supported. This will be
 extended in the near future to include any method on any object. Current implementation of method binding looks like
@@ -61,7 +60,11 @@ You can also catch Ruby errors in JavaScript:
   def tomato.raise_err
     raise ArgumentError, "Not what I meant!"
   end
-  tomato.run("try { raise_err(); } catch(e) {}"); #=> Nothing, because the error was caught.
+  tomato.run("try { raise_err(); } catch(e) {}");
+  
+  # Produces:
+  #
+  # Nothing, because the error was caught.
   
 Or let them bubble up to Ruby:
 
@@ -102,16 +105,22 @@ development ahead of them.
 
 == Requirements
 
- * Ruby. I'm testing on 1.9.1.
- * V8. You'll need to modify ext/tomato/extconf.rb to point to your V8 libraries and headers. You can download
-   V8 from http://code.google.com/apis/v8/ -- you'll need to build it yourself.
+ * Ruby. Tested:
+   * 1.8.7 p174 - pass
+   * 1.9.1 p378 - pass
+     * This is the version I developed Tomato against.
+   * 1.9.2 preview3 - pass
+ * Python 2.4+. This is used to compile the bundled V8.
+ 
+Note: I've not tested it on Windows, but if you can satisfy the above requirements and have a C++ compiler (gcc
+recommended), it should work. Make sure Python is in your path.
+ 
+== Installation
+
+  gem install tomato
+  
+That should be all there is to it.
    
-=== Regarding V8
- 
-I haven't figured out the best way to approach this yet. I think I'll end up bundling a version of V8 with the gem
-when release time comes, so that I can ensure compatibility. If the API changes, my code breaks. You know how it goes.
-For now you'll have to download it separately and build it manually, however. So if you're on Windows... good luck.
- 
 == Performance
 
 Too early to tell. Benchmarking will be done as I get closer to a real release.
