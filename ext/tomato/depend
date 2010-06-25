@@ -1,0 +1,6 @@
+binding_methods.o: binding_methods.cpp tomato.h
+conversions_to_js.o: conversions_to_js.cpp tomato.h
+conversions_to_rb.o: conversions_to_rb.cpp tomato.h
+errors.o: errors.cpp tomato.h
+tomato.o: tomato.cpp tomato.h
+v8.o: v8.cpp tomato.h

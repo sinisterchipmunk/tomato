@@ -1,6 +1,124 @@
 = tomato
 
-Description goes here.
+Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.
+
+== Examples
+
+=== Instantiation
+
+  require 'tomato'
+  tomato = Tomato.new
+  
+=== Running JavaScript code
+
+When JS code is executed, it'll do its thing internally and then return the result:
+
+  tomato.run("(1+1);") # => 2
+  
+When JS code encounters an error of some kind, it'll get raised in Ruby:
+
+  tomato.run("throw 'error';")
+  
+  # Produces:
+  # 
+  # Tomato::Error: (dynamic):error
+  # throw 'error';
+  # ^
+  #
+  #     from (irb):3:in `run'
+  #	    from (irb):3
+  #	    from /Users/colin/.rvm/rubies/ruby-1.9.1-p378/bin/irb:17:in `<main>'
+  
+You can bind Ruby methods to JavaScript, as well. CURRENTLY only Tomato instance methods are supported. This will be
+extended in the near future to include any method on any object. Current implementation of method binding looks like
+this:
+
+  tomato.bind_method(:inspect)
+  tomato.run("inspect();")  #=> "#<Tomato>"
+  
+For now (until a better method binding is implemented) you can add methods. You can do this before OR after binding it:
+
+  tomato.bind_method(:say_hello)
+  def tomato.say_hello
+    puts "Hi there!"
+  end
+  tomato.run("say_hello();")
+  
+  # Produces:
+  #
+  # Hi there!
+  #  => nil
+  
+You can also catch Ruby errors in JavaScript:
+
+  tomato.bind_method(:raise_err)
+  def tomato.raise_err
+    raise ArgumentError, "Not what I meant!"
+  end
+  tomato.run("try { raise_err(); } catch(e) {}"); #=> Nothing, because the error was caught.
+  
+Or let them bubble up to Ruby:
+
+  tomato.bind_method(:raise_err)
+  def tomato.raise_err
+    raise ArgumentError, "Not what I meant!"
+  end
+  begin
+    tomato.run("raise_err();");
+  rescue ArgumentError => err
+    puts "Error: #{err.message}"
+  end
+  
+  # Produces:
+  # 
+  # Error: Not what I meant!
+  #  => nil 
+
+That's all I've implemented so far, but I think it looks pretty cool.
+
+=== Object Types
+
+Some objects in Ruby don't exist in JS. So far the ones I've implemented are Hashes and Symbols.
+
+==== Symbols
+
+A Symbol is converted to an object in JS with a "symbol" attribute and a "toString()" method. That same object, if
+returned to Ruby, is converted back to a Symbol.
+ 
+
+==== Hashes
+
+A Hash is converted to an object of some form or another. It's not an Array. I haven't added much to the JS side of
+this object yet, so I don't know if it's even usable in JS. But it does, at least, return to Ruby as a Hash. So you
+can have a method that returns a Hash, call the method from JS, return that object to Ruby, and get the hash. Dunno
+if that's useful, but it's an implementation detail that had to be looked at regardless. Hashes still have a lot of
+development ahead of them.
+
+== Requirements
+
+ * Ruby. I'm testing on 1.9.1.
+ * V8. You'll need to modify ext/tomato/extconf.rb to point to your V8 libraries and headers. You can download
+   V8 from http://code.google.com/apis/v8/ -- you'll need to build it yourself.
+   
+=== Regarding V8
+ 
+I haven't figured out the best way to approach this yet. I think I'll end up bundling a version of V8 with the gem
+when release time comes, so that I can ensure compatibility. If the API changes, my code breaks. You know how it goes.
+For now you'll have to download it separately and build it manually, however. So if you're on Windows... good luck.
+ 
+== Performance
+
+Too early to tell. Benchmarking will be done as I get closer to a real release.
+
+Since V8's JavaScript code is compiled into byte code, this MAY (untested) have a positive impact on performance
+in some applications. Just translate your code to JavaScript and let V8 compile it to byte code. I'm hoping for some
+cool results.
+
+== IMPORTANT
+
+I haven't even added a version number yet because it's WAAAY too early for that. This is some pretty cool code IMO,
+but keep in mind if you want to check it out that it's still development code (not even pre-Alpha). I do hope to
+release it as a real gem after it's reached a sufficient level of functionality.
 
 == Note on Patches/Pull Requests
  

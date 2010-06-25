@@ -19,3 +19,9 @@ rdoc
 pkg
 
 ## PROJECT::SPECIFIC
+
+.idea
+*.o
+*.log
+*.bundle
+*.so
