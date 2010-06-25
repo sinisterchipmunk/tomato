@@ -177,11 +177,26 @@ That should be all there is to it.
    
 == Performance
 
-Too early to tell. Benchmarking will be done as I get closer to a real release.
+  ruby-1.9.1-p378 > javascript = <<-end_js
+  ruby-1.9.1-p378">   var str = "";
+  ruby-1.9.1-p378">   for (var i = 0; i < 1000000; i++)
+  ruby-1.9.1-p378">     str = 'a';
+  ruby-1.9.1-p378"> end_js
+  ruby-1.9.1-p378 > require 'benchmark'
+  ruby-1.9.1-p378 > require 'tomato'
+  ruby-1.9.1-p378 > t = Tomato.new
+  ruby-1.9.1-p378 >
+  ruby-1.9.1-p378 > # Setup complete, let's start the test
+  ruby-1.9.1-p378 > puts Benchmark.measure { for i in 1..1000000; str = 'a'; end }
+  ruby-1.9.1-p378 >  0.350000   0.000000   0.350000 (  0.358106)
+  ruby-1.9.1-p378 >
+  ruby-1.9.1-p378 > puts Benchmark.measure { t.run(javascript) }
+  ruby-1.9.1-p378 >  0.010000   0.000000   0.010000 (  0.012603)
+  
+'Nuff said.
 
-Since V8's JavaScript code is compiled into byte code, this MAY (untested) have a positive impact on performance
-in some applications. Just translate your code to JavaScript and let V8 compile it to byte code. I'm hoping for some
-cool results.
+Since V8's JavaScript code is compiled into byte code, this can have a positive impact on performance
+in some applications. Just translate your code to JavaScript and let Tomato compile it into byte code.
 
 == Note on Patches/Pull Requests
  
