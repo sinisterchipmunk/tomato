@@ -34,17 +34,46 @@ When JS code encounters an error of some kind, it'll get raised in Ruby:
   #     from (irb):3:in `run'
   #	    from (irb):3
   
-You can bind Ruby methods to JavaScript, as well. CURRENTLY only Tomato instance methods are supported. This will be
-extended in the near future to include any method on any object. Current implementation of method binding looks like
-this:
+You can bind Ruby methods to JavaScript, as well. You can bind an instance method of Tomato like so:
 
   tomato.bind_method(:inspect)
   tomato.run("inspect();")  #=> "#<Tomato>"
   
-For now (until a better method binding is implemented) you can add methods. You can do this before OR after binding it:
+Or, perhaps more usefully, you can bind an instance method of some other object:
 
-  tomato.bind_method(:say_hello)
-  def tomato.say_hello
+  tomato.bind_method(:inspect, 5)
+  tomato.run("inspect();")  #=> "5"
+  
+Moreover, arguments are accepted, too:
+
+  tomato.bind_method(:say, self)
+  def say(something)
+    puts something
+  end
+  tomato.run "say('Hi there!');"
+  
+  # Produces:
+  #
+  # Hi there!
+  #  => nil 
+
+In the spirit of true Ruby dynamicism, (is that a word?), you can feel free to re-bind new methods over old ones:
+
+  tomato.bind_method(:say)
+  tomato.run("say('something');")
+  #=> error! say is not an instance method of Tomato
+  
+  tomato.bind_method(:say, self)
+  def say(something); puts something; end
+  tomato.run("say('something');")
+  #=> something
+  
+==== More Examples
+
+Here's a set of examples which bind a Ruby method to the JavaScript context with various different results: 
+
+  tomato.bind_method(:say_hello, self)
+  def say_hello
     puts "Hi there!"
   end
   tomato.run("say_hello();")
@@ -56,8 +85,8 @@ For now (until a better method binding is implemented) you can add methods. You 
   
 You can also catch Ruby errors in JavaScript:
 
-  tomato.bind_method(:raise_err)
-  def tomato.raise_err
+  tomato.bind_method(:raise_err, self)
+  def raise_err
     raise ArgumentError, "Not what I meant!"
   end
   tomato.run("try { raise_err(); } catch(e) {}");
@@ -68,8 +97,8 @@ You can also catch Ruby errors in JavaScript:
   
 Or let them bubble up to Ruby:
 
-  tomato.bind_method(:raise_err)
-  def tomato.raise_err
+  tomato.bind_method(:raise_err, self)
+  def raise_err
     raise ArgumentError, "Not what I meant!"
   end
   begin

@@ -38,7 +38,7 @@ makefile.print <<EOF
 
 test: all
 	@echo Running specs...
-	spec -O spec/spec.opts spec
+	spec spec -c
 
 EOF
 end

@@ -4,19 +4,17 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = .
-topdir = /Users/colin/.rvm/rubies/ruby-1.9.2-preview3/include/ruby-1.9.1
-hdrdir = /Users/colin/.rvm/rubies/ruby-1.9.2-preview3/include/ruby-1.9.1
-arch_hdrdir = /Users/colin/.rvm/rubies/ruby-1.9.2-preview3/include/ruby-1.9.1/$(arch)
+topdir = /Users/colin/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1
+hdrdir = /Users/colin/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1
+arch_hdrdir = /Users/colin/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/$(arch)
 VPATH = $(srcdir):$(arch_hdrdir)/ruby:$(hdrdir)/ruby
-prefix = $(DESTDIR)/Users/colin/.rvm/rubies/ruby-1.9.2-preview3
-rubylibprefix = $(libdir)/$(RUBY_BASE_NAME)
+prefix = $(DESTDIR)/Users/colin/.rvm/rubies/ruby-1.9.1-p378
 exec_prefix = $(prefix)
 vendorhdrdir = $(rubyhdrdir)/vendor_ruby
 sitehdrdir = $(rubyhdrdir)/site_ruby
-rubyhdrdir = $(includedir)/$(RUBY_BASE_NAME)-$(ruby_version)
-vendordir = $(rubylibprefix)/vendor_ruby
-sitedir = $(rubylibprefix)/site_ruby
-ridir = $(datarootdir)/$(RI_BASE_NAME)
+rubyhdrdir = $(includedir)/$(RUBY_INSTALL_NAME)-$(ruby_version)
+vendordir = $(libdir)/$(RUBY_INSTALL_NAME)/vendor_ruby
+sitedir = $(libdir)/$(RUBY_INSTALL_NAME)/site_ruby
 mandir = $(datarootdir)/man
 localedir = $(datarootdir)/locale
 libdir = $(exec_prefix)/lib
@@ -36,7 +34,7 @@ datarootdir = $(prefix)/share
 libexecdir = $(exec_prefix)/libexec
 sbindir = $(exec_prefix)/sbin
 bindir = $(exec_prefix)/bin
-rubylibdir = $(rubylibprefix)/$(ruby_version)
+rubylibdir = $(libdir)/$(ruby_install_name)/$(ruby_version)
 archdir = $(rubylibdir)/$(arch)
 sitelibdir = $(sitedir)/$(ruby_version)
 sitearchdir = $(sitelibdir)/$(sitearch)
@@ -53,35 +51,34 @@ OUTFLAG = -o
 COUTFLAG = -o 
 
 RUBY_EXTCONF_H = 
-cflags   =  $(optflags) $(debugflags) $(warnflags)
-optflags = -O3
-debugflags = -ggdb
-warnflags = -Wextra -Wno-unused-parameter -Wno-parentheses -Wpointer-arith -Wwrite-strings -Wno-missing-field-initializers -Wshorten-64-to-32 -Wno-long-long
-CFLAGS   = -fno-common $(cflags)  -fno-common -pipe 
+cflags   = $(optflags) $(debugflags) $(warnflags)
+optflags = -O2
+debugflags = -g
+warnflags = -Wall -Wno-parentheses
+CFLAGS   =  -fno-common  $(cflags)  -fno-common -pipe -fno-common 
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/Users/colin/projects/gems/tomato/ext/tomato/external/build/v8/include
 DEFS     = 
-CPPFLAGS =  -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE $(DEFS) $(cppflags) -Wall -g -rdynamic
-CXXFLAGS = $(CFLAGS) $(cxxflags)
+CPPFLAGS =   -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE $(DEFS) $(cppflags) -Wall -g -rdynamic
+CXXFLAGS = $(CFLAGS)  $(cxxflags)
 ldflags  = -L. -L/usr/local/lib
-dldflags = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress -Wl,-flat_namespace
-ARCH_FLAG = 
-DLDFLAGS = $(ldflags) $(dldflags)
-LDSHARED = $(CC) -dynamic -bundle
-LDSHAREDXX = $(CXX) -dynamic -bundle
+dldflags = 
+archflag = 
+DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
+LDSHARED = cc -dynamic -bundle -undefined suppress -flat_namespace
+LDSHAREDXX = $(LDSHARED)
 AR = ar
 EXEEXT = 
 
-RUBY_BASE_NAME = ruby
 RUBY_INSTALL_NAME = ruby
-RUBY_SO_NAME = ruby.1.9.1
-arch = x86_64-darwin10.4.0
-sitearch = $(arch)
+RUBY_SO_NAME = ruby
+arch = i386-darwin10.4.0
+sitearch = i386-darwin10.4.0
 ruby_version = 1.9.1
-ruby = /Users/colin/.rvm/rubies/ruby-1.9.2-preview3/bin/ruby
+ruby = /Users/colin/.rvm/rubies/ruby-1.9.1-p378/bin/ruby
 RUBY = $(ruby)
 RM = rm -f
 RM_RF = $(RUBY) -run -e rm -- -rf
-RMDIRS = rmdir -p
+RMDIRS = $(RUBY) -run -e rmdir -- -p
 MAKEDIRS = mkdir -p
 INSTALL = /usr/bin/install -c
 INSTALL_PROG = $(INSTALL) -m 0755
@@ -104,7 +101,7 @@ extout =
 extout_prefix = 
 target_prefix = 
 LOCAL_LIBS = 
-LIBS = $(LIBRUBYARG_SHARED) -lobjc -lpthread  -lpthread -ldl -lobjc  -lv8
+LIBS = $(LIBRUBYARG_SHARED) -lobjc -lpthread  -lpthread -ldl -lobjc   -lv8
 SRCS = binding_methods.cpp conversions_to_js.cpp conversions_to_rb.cpp errors.cpp tomato.cpp v8.cpp
 OBJS = binding_methods.o conversions_to_js.o conversions_to_rb.o errors.o tomato.o v8.o
 TARGET = tomato
@@ -125,8 +122,6 @@ CLEANOBJS     = *.o  *.bak
 
 all:    $(DLLIB)
 static: $(STATIC_LIB)
-.PHONY: all install static install-so install-rb
-.PHONY: clean clean-so clean-rb
 
 clean-rb-default::
 clean-rb::
@@ -148,8 +143,7 @@ install: install-so install-rb
 install-so: $(RUBYARCHDIR)
 install-so: $(RUBYARCHDIR)/$(DLLIB)
 $(RUBYARCHDIR)/$(DLLIB): $(DLLIB)
-	@-$(MAKEDIRS) $(@D)
-	$(INSTALL_PROG) $(DLLIB) $(@D)
+	$(INSTALL_PROG) $(DLLIB) $(RUBYARCHDIR)
 install-rb: pre-install-rb install-rb-default
 install-rb-default: pre-install-rb-default
 pre-install-rb: Makefile
@@ -194,5 +188,5 @@ v8.o: v8.cpp tomato.h
 
 test: all
 	@echo Running specs...
-	spec -O spec/spec.opts spec
+	spec spec -c
 

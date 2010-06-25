@@ -11,6 +11,7 @@ begin
     gem.email = "sinisterchipmunk@gmail.com"
     gem.homepage = "http://www.thoughtsincomputation.com"
     gem.authors = ["Colin MacKenzie IV"]
+    gem.add_dependency "sc-core-ext", ">= 1.2.0"
     gem.add_development_dependency "rspec", ">= 1.3.0"
     gem.files = FileList['**/*']
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
