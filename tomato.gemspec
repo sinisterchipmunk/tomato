@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{tomato}
-  s.version = "0.0.1.prealpha1"
+  s.version = "0.0.1.prealpha2"
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Colin MacKenzie IV"]
-  s.date = %q{2010-06-25}
+  s.date = %q{2010-06-26}
   s.description = %q{Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.}
   s.email = %q{sinisterchipmunk@gmail.com}
   s.extensions = ["ext/tomato/extconf.rb"]
@@ -25,6 +25,7 @@ Gem::Specification.new do |s|
      "ext/tomato/IMPORTANT",
      "ext/tomato/Makefile",
      "ext/tomato/binding_methods.cpp",
+     "ext/tomato/binding_methods.h",
      "ext/tomato/binding_methods.o",
      "ext/tomato/conversions_to_js.cpp",
      "ext/tomato/conversions_to_js.o",
@@ -3330,6 +3331,8 @@ Gem::Specification.new do |s|
      "ext/tomato/external/v8/tools/windows-tick-processor.bat",
      "ext/tomato/external/v8/tools/windows-tick-processor.py",
      "ext/tomato/mkmf.log",
+     "ext/tomato/object_chain.cpp",
+     "ext/tomato/object_chain.o",
      "ext/tomato/tomato.bundle",
      "ext/tomato/tomato.cpp",
      "ext/tomato/tomato.h",
@@ -3339,10 +3342,13 @@ Gem::Specification.new do |s|
      "lib/tomato.rb",
      "pkg/tomato-0.0.1.gem",
      "pkg/tomato-0.0.1.prealpha1.gem",
+     "spec/lib/bound_class_spec.rb",
      "spec/lib/bound_methods_spec.rb",
+     "spec/lib/bound_object_spec.rb",
      "spec/lib/conversions_spec.rb",
      "spec/lib/tomato_spec.rb",
      "spec/spec_helper.rb",
+     "t.rb",
      "tomato.gemspec"
   ]
   s.homepage = %q{http://www.thoughtsincomputation.com}
@@ -3351,7 +3357,9 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.3.7}
   s.summary = %q{Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.}
   s.test_files = [
-    "spec/lib/bound_methods_spec.rb",
+    "spec/lib/bound_class_spec.rb",
+     "spec/lib/bound_methods_spec.rb",
+     "spec/lib/bound_object_spec.rb",
      "spec/lib/conversions_spec.rb",
      "spec/lib/tomato_spec.rb",
      "spec/spec_helper.rb"
@@ -3362,11 +3370,14 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+      s.add_runtime_dependency(%q<sc-core-ext>, [">= 1.2.0"])
       s.add_development_dependency(%q<rspec>, [">= 1.3.0"])
     else
+      s.add_dependency(%q<sc-core-ext>, [">= 1.2.0"])
       s.add_dependency(%q<rspec>, [">= 1.3.0"])
     end
   else
+    s.add_dependency(%q<sc-core-ext>, [">= 1.2.0"])
     s.add_dependency(%q<rspec>, [">= 1.3.0"])
   end
 end

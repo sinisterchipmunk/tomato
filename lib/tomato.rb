@@ -1,6 +1,7 @@
 $LOAD_PATH << File.expand_path("../../ext/tomato", __FILE__)
 require 'tomato.so'
 require 'sc-core-ext'
+require File.expand_path('../tomato/console', __FILE__)
 
 class Tomato
   # Bind a method to the JavaScript world. If no other arguments are given, the method will be called on this

@@ -22,6 +22,12 @@ rescue LoadError
   return
 end
 
+desc "console"
+task :console do
+  require 'lib/tomato'
+  Tomato::Console.new
+end
+
 Spec::Rake::SpecTask.new(:test) do |test|
   test.libs << 'lib'
   test.pattern = 'spec/**/*_spec.rb'
