@@ -1,9 +1,23 @@
 require 'spec_helper'
 
 describe "Tomato conversions" do
-  context "from Ruby to JS to Ruby" do
-    subject { Tomato.new }
+  subject { Tomato.new }
     
+  context "from JS to Ruby" do
+    it "should handle objects" do
+      pending "how to do it? JSON?"
+    end
+    
+    it "should handle classes" do
+      pending "how to do it? Prototype?"
+    end
+    
+    it "should handle modules" do
+      pending "how to do it? Prototype?"
+    end
+  end
+  
+  context "from Ruby to JS to Ruby" do
     def handle(value)
       $test_value = value
       def subject.a_method; $test_value; end
@@ -25,18 +39,6 @@ describe "Tomato conversions" do
     
     it "should handle nil" do
       handle(nil).should == nil
-    end
-    
-    it "should handle objects" do
-      pending "how to do it? JSON?"
-    end
-    
-    it "should handle classes" do
-      pending "how to do it? Prototype?"
-    end
-    
-    it "should handle modules" do
-      pending "how to do it? Prototype?"
     end
     
     it "should handle floats" do

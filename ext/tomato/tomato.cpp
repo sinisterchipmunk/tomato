@@ -13,6 +13,20 @@ static VALUE fTomato_execute(VALUE self, const char *javascript, const char *fil
 static void tomato_mark(V8Tomato *tomato);
 static void tomato_free(V8Tomato *tomato);
 
+static v8::Handle<v8::Value> debug(const Arguments &args)
+{
+  Handle<Value> arg;
+  V8Tomato *tomato = (V8Tomato *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato")))->Value());
+  for (int i = 0; i < args.Length(); i++)
+  {
+    arg = args[i];
+    if (i > 0) printf(", ");
+    String::Utf8Value str(inspect_js(tomato, args[i]));
+    printf("<%s>", ToCString(str));
+  }
+  printf("\n");
+  return Null();
+}
 
 extern "C"
 void Init_tomato(void)
@@ -37,7 +51,10 @@ void Init_tomato(void)
   
   /* instance method "bind_method" */
   rb_define_method(cTomato, "_bind_method", (ruby_method_vararg *)&fTomato_bind_method, -1);
-
+  
+  /* instance method "_bind_class" */
+  rb_define_method(cTomato, "_bind_class", (ruby_method_vararg *)&fTomato_bind_class, 2);
+  
   /* init error-specific junk */
   err_init();
 }
@@ -50,9 +67,11 @@ static VALUE fTomato_allocate(VALUE klass)
   
   HandleScope handle_scope;
   Handle<ObjectTemplate> global = ObjectTemplate::New();
+  global->Set(String::New("debug"), FunctionTemplate::New(debug));
+  global->Set(String::New("_tomato"), External::New(tomato), DontEnum);
   tomato->context = Context::New(NULL, global);
   tomato->rb_instance = instance;
-  
+
   return instance;  
 }
 

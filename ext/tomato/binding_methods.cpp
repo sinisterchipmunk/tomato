@@ -1,9 +1,7 @@
 #include "tomato.h"
+#include "binding_methods.h"
 
 static VALUE bound_method_call(VALUE args);
-static Handle<Value> bound_method(const Arguments& args);
-static int store_rb_message(const Arguments &args, V8Tomato **out_tomato, VALUE *out_receiver, ID *out_method_id);
-static void store_args(V8Tomato *tomato, VALUE rbargs, const Arguments &args);
 
 Handle<Value> bound_method(const Arguments& args)
 {
@@ -35,7 +33,7 @@ Handle<Value> bound_method(const Arguments& args)
   return js_value_of(tomato, result);
 }
 
-static void store_args(V8Tomato *tomato, VALUE rbargs, const Arguments &args)
+void store_args(V8Tomato *tomato, VALUE rbargs, const Arguments &args)
 {
   int length = args.Length();
   int offset = RARRAY_LEN(rbargs);
@@ -100,7 +98,6 @@ VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
   if (value->IsObject())
   {
     Handle<Object> object = Handle<Object>::Cast(value);
-    Handle<Value> proto_value = object->GetPrototype();
     Handle<Function> function = FunctionTemplate::New(bound_method)->GetFunction();
 
     function->Set(String::New("_tomato"), External::New(tomato));

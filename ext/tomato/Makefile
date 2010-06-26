@@ -179,11 +179,11 @@ $(DLLIB): $(OBJS) Makefile
 
 
 ###
-binding_methods.o: binding_methods.cpp tomato.h
+binding_methods.o: binding_methods.cpp tomato.h binding_methods.h
 conversions_to_js.o: conversions_to_js.cpp tomato.h
 conversions_to_rb.o: conversions_to_rb.cpp tomato.h
 errors.o: errors.cpp tomato.h
-object_chain.o: object_chain.cpp tomato.h
+object_chain.o: object_chain.cpp tomato.h binding_methods.h
 tomato.o: tomato.cpp tomato.h
 v8.o: v8.cpp tomato.h
 

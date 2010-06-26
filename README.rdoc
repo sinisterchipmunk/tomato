@@ -80,6 +80,25 @@ You can also easily bind an entire object to JavaScript:
   tomato.bind_object(Time.now, "time.current")
   tomato.run("time.current.to_s();")
   #=> "2010-06-25 18:12:23 -0400"
+  
+Even better, you can also bind a whole class and instantiate it from within JavaScript. If you return the object to
+Ruby, it'll be seamlessly converted into the corresponding Ruby object.
+  
+  class Person
+    def initialize(name)
+      @name = name
+    end
+    attr_accessor :name, :age
+  end
+  
+  tomato.bind_object(Person, "world.Person")
+  tomato.run <<-end_js
+    var colin = new world.Person("Colin");
+    colin.age = 25;
+    colin;
+  end_js
+  
+  #=> #<Person:0x00000100dbbc50 @name="Colin", @age=25>  
 
 ==== Error Handling
 

@@ -32,10 +32,9 @@ class Tomato
   def bind_method(method_name, *args)
     options = args.extract_options!
     receiver = options[:object] || args.first || self
-    receivers << receiver unless receivers.include?(receiver)
-    chain = options[:to] ? options[:to].split(/\./) : nil
+    chain = options[:to] ? split_chain(options[:to]) : nil
     # Bind the method to JS.
-    _bind_method(method_name, receivers.index(receiver), chain)
+    _bind_method(method_name, receiver_index(receiver), chain)
   end
   
   # Binds an entire Ruby object to the specified JavaScript object chain.
@@ -63,9 +62,17 @@ class Tomato
   #  tomato.run("ruby.time.to_s()")
   #   #=> "2010-06-25 18:08:29 -0400"
   def bind_object(obj, chain = nil)
-    if (obj.kind_of?(Class) || obj.kind_of?(Module)) && chain.nil?
-      chain = obj.name.gsub(/\:\:/, '.')
-      chain = chain[1..-1] if chain[0] == ?.
+    if (obj.kind_of?(Class) || obj.kind_of?(Module))
+      if chain.nil?
+        chain = obj.name.gsub(/\:\:/, '.')
+        chain = chain[1..-1] if chain[0] == ?.
+      end
+      # This sets up an object chain with the last created object as a Function, which can
+      # then be instiated with "new [Object]()" in JS.
+      #
+      # Objects of the same name in the chain are replaced, but their sub-objects are copied over
+      # so it should be transparent to the user.
+      return false unless _bind_class(receiver_index(obj), split_chain(chain))
     elsif chain.nil?
       unqualified_name = obj.class.name.gsub(/.*\:\:([^\:])?$/, '\1').underscore
       chain = "ruby.#{unqualified_name}"
@@ -77,14 +84,31 @@ class Tomato
     obj
   end
   
-  alias bind bind_method
+  # Attempts to bind this object to the JavaScript world. If it's a String or Symbol, it will be treated
+  # as a call to #bind_method; otherwise, a call to #bind_object.
+  def bind(target, *args)
+    if target.kind_of?(String) || target.kind_of?(Symbol)
+      bind_method(target, *args)
+    else
+      bind_object(target, *args)
+    end
+  end
   
   def inspect
     "#<Tomato>"
   end
   
   private
+  def split_chain(str)
+    str.split(/\./)
+  end
+  
   def receivers
     @receivers ||= []
+  end
+  
+  def receiver_index(receiver)
+    receivers << receiver unless receivers.include?(receiver)
+    receivers.index(receiver)
   end
 end

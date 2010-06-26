@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Tomato bound methods" do
+describe "Tomato bound objects" do
   subject { Tomato.new }
   
   it "should bind a Ruby class to an implicit chain" do

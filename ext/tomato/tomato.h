@@ -30,10 +30,11 @@ extern VALUE rb_cTime;
 
 /* in object_chain.cpp */
 extern Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain);
+extern VALUE fTomato_bind_class(VALUE self, VALUE klass, VALUE chain);
 
 /* in conversions_to_rb.cpp */
 extern VALUE ruby_value_of(V8Tomato *tomato, Handle<Value> result);
-extern void  inspect_js(V8Tomato *tomato, Handle<Value> obj);
+extern Handle<Value> inspect_js(V8Tomato *tomato, Handle<Value> obj);
 
 /* in conversions_to_js.cpp */
 extern Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value);
