@@ -47,7 +47,6 @@ static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result)
     {
       /* it's not a wrapped object. Doing nothing will fall back to JSON representation. */
     }
-    //if (object->Get(String::New("_tomato_ruby_wrapper"))->IsTrue()) return ruby_unwrapped_object_from(tomato, object);
   }
   
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return nil. */
