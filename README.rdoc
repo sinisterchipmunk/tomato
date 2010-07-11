@@ -192,7 +192,7 @@ To install the latest and greatest prerelease:
 To install the current stable release:
   gem install tomato
 
-That should be all there is to it.
+That should be all there is to it. The package is pretty large as gems go, so be patient.
    
 == Performance
 

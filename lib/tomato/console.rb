@@ -58,7 +58,7 @@ class Tomato
 
           line = line.strip
           if !line.blank?
-            if (line = line.strip)[-1] == '\\' # defer to next line
+            if line[-1] == ?\\ # defer to next line
               cmd.concat line[0...-1] + ' '
             else
               cmd.concat line
