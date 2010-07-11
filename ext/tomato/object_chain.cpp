@@ -9,7 +9,7 @@ static void bound_setter(Local<String> property, Local<Value> value, const Acces
 static VALUE protected_get(VALUE args);
 static VALUE protected_set(VALUE args);
 
-VALUE fTomato_bind_class(VALUE self, VALUE receiver_index, VALUE chain)
+VALUE fTomato_bind_class(VALUE self, VALUE receiver, VALUE chain)
 {
   V8Tomato *tomato;
   Data_Get_Struct(self, V8Tomato, tomato);
@@ -28,7 +28,7 @@ VALUE fTomato_bind_class(VALUE self, VALUE receiver_index, VALUE chain)
     Handle<Object> object = Handle<Object>::Cast(parent);
     Handle<Function> function = FunctionTemplate::New(ruby_class_constructor)->GetFunction();
     
-    tomatofy_function(function, tomato, FIX2INT(receiver_index), method_name);
+    tomatofy_function(function, tomato, receiver, method_name);
     function->SetName(method_name);
 
     Handle<Value> current_value = object->Get(method_name);
@@ -77,27 +77,27 @@ v8::Handle<v8::Value> ruby_class_constructor(const Arguments &args)
   }
 
   Local<Object> holder = args.Holder();
-  holder->Set(String::New("_tomato_ruby_wrapper"), Boolean::New(true), DontEnum);
-  holder->Set(String::New("_tomato_receiver_index"),
-    Int32::New(FIX2INT(rb_funcall(tomato->rb_instance, rb_intern("receiver_index"), 1, result))), DontEnum);
+  //holder->Set(String::New("_tomato_ruby_wrapper"), Boolean::New(true), DontEnum);
+  register_value_wrapper(holder, tomato, result);  
+//  holder->Set(String::New("_tomato_receiver"),
+//    Int32::New(FIX2INT(rb_funcall(tomato->rb_instance, rb_intern("receiver_index"), 1, result))), DontEnum);
   return bind_methods(holder, result, tomato);
 }
 
 Handle<Value> bind_methods(Local<Object> js, VALUE rb, V8Tomato *tomato)
 {
   VALUE methods = rb_funcall(rb, rb_intern("public_methods"), 0);
-  int receiver_index = FIX2INT(rb_funcall(tomato->rb_instance, rb_intern("receiver_index"), 1, rb));
   
   HandleScope handle_scope;
   Context::Scope context_scope(tomato->context);
   Handle<String> method_name;
-  js->Set(String::New("_tomato"), External::New(tomato));
+  //js->Set(String::New("_tomato"), External::New(tomato));
   for (int i = 0; i < RARRAY_LEN(methods); i++)
   {
     method_name = String::New(StringValuePtr(*(RARRAY_PTR(methods)+i)));
     Handle<Function> function = FunctionTemplate::New(bound_method)->GetFunction();
   
-    tomatofy_function(function, tomato, receiver_index, method_name);
+    tomatofy_function(function, tomato, rb, method_name);
     function->SetName(method_name);
   
     js->Set(method_name, function);
@@ -129,65 +129,68 @@ static Handle<Value> bound_getter(Local<String> property, const AccessorInfo &in
 {
   int error;
   Local<Object> self = info.Holder();
-
+  
+  ValueWrapper *wrapper = extract_value_wrapper(self);
+  
   // pull the binding data from the function (stored there by fTomato_bind_method)
-  Local<Value> v8_tomato         = self->Get(String::New("_tomato"));
-  Local<Value> v8_receiver_index = self->Get(String::New("_tomato_receiver_index"));
+  //Local<Value> v8_tomato         = self->Get(String::New("_tomato"));
+  //Local<Value> v8_receiver_index = self->Get(String::New("_tomato_receiver_index"));
   
   // make sure the data is what we expect it to be
-  if (!v8_tomato->IsExternal())      return ThrowException(String::New("_tomato is not an external! (bug: please report)"));
-  if (!v8_receiver_index->IsInt32()) return ThrowException(String::New("_tomato_receiver_index is not an Int32! (bug: please report)"));
+//  if (!v8_tomato->IsExternal())      return ThrowException(String::New("_tomato is not an external! (bug: please report)"));
+//  if (!v8_receiver_index->IsInt32()) return ThrowException(String::New("_tomato_receiver_index is not an Int32! (bug: please report)"));
     
   // find the tomato
-  V8Tomato *tomato = (V8Tomato *)Local<External>::Cast(v8_tomato)->Value();
+  //V8Tomato *tomato = (V8Tomato *)Local<External>::Cast(v8_tomato)->Value();
   
   // find the receiver index, and make sure it's a valid index
-  int receiver_index = v8_receiver_index->Int32Value();
-  VALUE receivers = rb_iv_get(tomato->rb_instance, "@receivers"); //rb_funcall(tomato->rb_instance, rb_intern("receivers"));
-  if (RARRAY_LEN(receivers) < receiver_index) return ThrowException(String::New("_tomato_receiver_index is too small! (bug: please report)"));
+  //int receiver_index = v8_receiver_index->Int32Value();
+  //VALUE receivers = rb_iv_get(tomato->rb_instance, "@receivers"); //rb_funcall(tomato->rb_instance, rb_intern("receivers"));
+  //if (RARRAY_LEN(receivers) < receiver_index) return ThrowException(String::New("_tomato_receiver_index is too small! (bug: please report)"));
   
   // get the receiver
-  VALUE receiver = (RARRAY_PTR(receivers)[receiver_index]);
+  //VALUE receiver = (RARRAY_PTR(receivers)[receiver_index]);
 
   VALUE args = rb_ary_new();
   String::Utf8Value property_name(property);
-  rb_ary_push(args, receiver);
+  rb_ary_push(args, wrapper->value);
   rb_ary_push(args, ID2SYM(rb_intern(ToCString(property_name))));
   VALUE result = rb_protect(protected_get, args, &error);
   if (error)
     return ThrowException(js_error_from(rb_gv_get("$!")));
-  return js_value_of(tomato, result);
+  return js_value_of(wrapper->tomato, result);
 }
 
 static void bound_setter(Local<String> property, Local<Value> value, const AccessorInfo &info)
 {
   int error;
   Local<Object> self = info.Holder();
+  ValueWrapper *wrapper = extract_value_wrapper(self);
 
   // pull the binding data from the function (stored there by fTomato_bind_method)
-  Local<Value> v8_tomato         = self->Get(String::New("_tomato"));
-  Local<Value> v8_receiver_index = self->Get(String::New("_tomato_receiver_index"));
-  
-  // make sure the data is what we expect it to be
-  if (!v8_tomato->IsExternal())      { ThrowException(String::New("_tomato is not an external! (bug: please report)")); return; }
-  if (!v8_receiver_index->IsInt32()) { ThrowException(String::New("_tomato_receiver_index is not an Int32! (bug: please report)")); return; }
-    
-  // find the tomato
-  V8Tomato *tomato = (V8Tomato *)Local<External>::Cast(v8_tomato)->Value();
-  
-  // find the receiver index, and make sure it's a valid index
-  int receiver_index = v8_receiver_index->Int32Value();
-  VALUE receivers = rb_iv_get(tomato->rb_instance, "@receivers"); //rb_funcall(tomato->rb_instance, rb_intern("receivers"));
-  if (RARRAY_LEN(receivers) < receiver_index) { ThrowException(String::New("_tomato_receiver_index is too small! (bug: please report)")); return; }
-  
-  // get the receiver
-  VALUE receiver = (RARRAY_PTR(receivers)[receiver_index]);
+//  Local<Value> v8_tomato         = self->Get(String::New("_tomato"));
+//  Local<Value> v8_receiver_index = self->Get(String::New("_tomato_receiver_index"));
+//  
+//  // make sure the data is what we expect it to be
+//  if (!v8_tomato->IsExternal())      { ThrowException(String::New("_tomato is not an external! (bug: please report)")); return; }
+//  if (!v8_receiver_index->IsInt32()) { ThrowException(String::New("_tomato_receiver_index is not an Int32! (bug: please report)")); return; }
+//    
+//  // find the tomato
+//  V8Tomato *tomato = (V8Tomato *)Local<External>::Cast(v8_tomato)->Value();
+//  
+//  // find the receiver index, and make sure it's a valid index
+//  int receiver_index = v8_receiver_index->Int32Value();
+//  VALUE receivers = rb_iv_get(tomato->rb_instance, "@receivers"); //rb_funcall(tomato->rb_instance, rb_intern("receivers"));
+//  if (RARRAY_LEN(receivers) < receiver_index) { ThrowException(String::New("_tomato_receiver_index is too small! (bug: please report)")); return; }
+//  
+//  // get the receiver
+//  VALUE receiver = (RARRAY_PTR(receivers)[receiver_index]);
 
   VALUE args = rb_ary_new();
   String::Utf8Value property_name(property);
-  rb_ary_push(args, receiver);
+  rb_ary_push(args, wrapper->value);
   rb_ary_push(args, ID2SYM(rb_intern(ToCString(property_name))));
-  rb_ary_push(args, ruby_value_of(tomato, value));
+  rb_ary_push(args, ruby_value_of(wrapper->tomato, value));
   rb_protect(protected_set, args, &error);
   if (error)
     ThrowException(js_error_from(rb_gv_get("$!")));

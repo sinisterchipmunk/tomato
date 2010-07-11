@@ -71,11 +71,16 @@ static VALUE fTomato_allocate(VALUE klass)
   global->Set(String::New("_tomato"), External::New(tomato), DontEnum);
   tomato->context = Context::New(NULL, global);
   tomato->rb_instance = instance;
+  tomato->rb_references = rb_hash_new();
 
   return instance;  
 }
 
-static void tomato_mark(V8Tomato *tomato) { }
+static void tomato_mark(V8Tomato *tomato)
+{
+  rb_gc_mark(tomato->rb_references);
+}
+
 static void tomato_free(V8Tomato *tomato)
 {
   tomato->context.Dispose();

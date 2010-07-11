@@ -47,7 +47,7 @@ class Tomato
     
     # Bind the method to JS.
     as = as.to_sym if as.respond_to?(:to_sym)
-    _bind_method(method_name, receiver_index(receiver), chain, as)
+    _bind_method(method_name, receiver, chain, as)
   end
   
   # Binds an entire Ruby object to the specified JavaScript object chain.
@@ -85,7 +85,7 @@ class Tomato
       #
       # Objects of the same name in the chain are replaced, but their sub-objects are copied over
       # so it should be transparent to the user.
-      return false unless _bind_class(receiver_index(obj), split_chain(chain))
+      return false unless _bind_class(obj, split_chain(chain))
     elsif chain.nil?
       unqualified_name = obj.class.name.gsub(/.*\:\:([^\:])?$/, '\1').underscore
       chain = "ruby.#{unqualified_name}"
@@ -116,12 +116,12 @@ class Tomato
     str.split(/\./)
   end
   
-  def receivers
-    @receivers ||= []
-  end
-  
-  def receiver_index(receiver)
-    receivers << receiver unless receivers.include?(receiver)
-    receivers.index(receiver)
-  end
+#  def receivers
+#    @receivers ||= []
+#  end
+#  
+#  def receiver_index(receiver)
+#    receivers << receiver unless receivers.include?(receiver)
+#    receivers.index(receiver)
+#  end
 end

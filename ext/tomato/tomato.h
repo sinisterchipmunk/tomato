@@ -18,7 +18,13 @@ typedef VALUE (ruby_method_1)(VALUE);
 typedef struct {
   Persistent<Context> context;
   VALUE rb_instance;
+  VALUE rb_references;
 } V8Tomato;
+
+typedef struct {
+  VALUE value;
+  V8Tomato *tomato;
+} ValueWrapper;
 
 // Extracts a C string from a V8 Utf8Value.
 #define ToCString(value) (*value ? *value : "<string conversion failed>")
@@ -27,6 +33,9 @@ typedef struct {
 extern VALUE cTomato;
 extern VALUE cTomatoError;
 extern VALUE rb_cTime;
+extern void push_rb_reference(V8Tomato *tomato, VALUE ref);
+extern void pop_rb_reference(V8Tomato *tomato, VALUE ref);
+
 
 /* in object_chain.cpp */
 extern Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain);
@@ -51,5 +60,9 @@ extern VALUE execute(V8Tomato *tomato, Handle<String> source, Handle<Value> name
 
 /* in binding_methods.cpp */
 extern VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self);
+
+/* in value_wrapper.cpp */
+extern void register_value_wrapper(Handle<Object> target, V8Tomato *tomato, VALUE value);
+extern ValueWrapper *extract_value_wrapper(Handle<Object> target);
 
 #endif//TOMATO_H
