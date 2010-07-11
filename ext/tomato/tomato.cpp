@@ -5,28 +5,12 @@ VALUE cTomatoError = Qnil;
 VALUE rb_cTime = Qnil;
 
 static VALUE fTomato_run(int argc, VALUE *argv, VALUE self);
-static VALUE fTomato_version(VALUE self);
 static VALUE fTomato_allocate(VALUE klass);
 
 static VALUE fTomato_execute(VALUE self, const char *javascript, const char *filename);
 
 static void tomato_mark(V8Tomato *tomato);
 static void tomato_free(V8Tomato *tomato);
-
-static v8::Handle<v8::Value> debug(const Arguments &args)
-{
-  Handle<Value> arg;
-  V8Tomato *tomato = (V8Tomato *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato")))->Value());
-  for (int i = 0; i < args.Length(); i++)
-  {
-    arg = args[i];
-    if (i > 0) printf(", ");
-    String::Utf8Value str(inspect_js(tomato, args[i]));
-    printf("<%s>", ToCString(str));
-  }
-  printf("\n");
-  return Null();
-}
 
 extern "C"
 void Init_tomato(void)
@@ -45,10 +29,7 @@ void Init_tomato(void)
   
   /* instance method "run" accepts a String argument */
   rb_define_method(cTomato, "run", (ruby_method_vararg *)&fTomato_run, -1);
-  
-  /* instance method "version" */
-  rb_define_method(cTomato, "version", (ruby_method_vararg *)&fTomato_version, 0);
-  
+    
   /* instance method "bind_method" */
   rb_define_method(cTomato, "_bind_method", (ruby_method_vararg *)&fTomato_bind_method, -1);
   
@@ -57,6 +38,9 @@ void Init_tomato(void)
   
   /* init error-specific junk */
   err_init();
+  
+  /* init V8-specific junk */
+  v8_init();
 }
 
 
@@ -64,12 +48,8 @@ static VALUE fTomato_allocate(VALUE klass)
 {
   V8Tomato *tomato = new V8Tomato;
   VALUE instance = Data_Wrap_Struct(klass, tomato_mark, tomato_free, tomato);
+  rb_iv_set(instance, "@v8", rb_class_new_instance(0, 0, cV8));
   
-  HandleScope handle_scope;
-  Handle<ObjectTemplate> global = ObjectTemplate::New();
-  global->Set(String::New("debug"), FunctionTemplate::New(debug));
-  global->Set(String::New("_tomato"), External::New(tomato), DontEnum);
-  tomato->context = Context::New(NULL, global);
   tomato->rb_instance = instance;
   tomato->rb_references = rb_hash_new();
 
@@ -83,13 +63,7 @@ static void tomato_mark(V8Tomato *tomato)
 
 static void tomato_free(V8Tomato *tomato)
 {
-  tomato->context.Dispose();
   delete tomato;
-}
-
-static VALUE fTomato_version(VALUE self)
-{
-  return rb_str_new2(V8::GetVersion());
 }
 
 /* Runs a String of JavaScript code. */
@@ -134,9 +108,16 @@ static VALUE fTomato_execute(VALUE self, const char *javascript, const char *fil
 {
   V8Tomato *tomato;
   Data_Get_Struct(self, V8Tomato, tomato);
-  Context::Scope context_scope(tomato->context);  
+  Context::Scope context_scope(tomato_v8_context(tomato));  
   HandleScope handle_scope;
   Handle<String> source_code = String::New(javascript);
   Handle<String> name = String::New(filename);
   return execute(tomato, source_code, name);
+}
+
+Persistent<Context> tomato_v8_context(V8Tomato *tomato)
+{
+  V8Context *v8;
+  Data_Get_Struct(rb_iv_get(tomato->rb_instance, "@v8"), V8Context, v8);
+  return v8->context;
 }

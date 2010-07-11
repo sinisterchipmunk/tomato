@@ -15,7 +15,7 @@ VALUE fTomato_bind_class(VALUE self, VALUE receiver, VALUE chain)
   Data_Get_Struct(self, V8Tomato, tomato);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato->context);
+  Context::Scope context_scope(tomato_v8_context(tomato));
   VALUE js_class_name = rb_ary_pop(chain);
   // This is kind of a misnomer. We're creating a JavaScript function ("method") to stand in for
   // the Ruby class. So the method_name has to be the Ruby class name. Consider: "new" is not a 
@@ -84,7 +84,7 @@ static Handle<Value> bind_methods(Local<Object> js_object, VALUE rb_reference, V
   VALUE methods = rb_funcall(rb_reference, rb_intern("public_methods"), 0);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato->context);
+  Context::Scope context_scope(tomato_v8_context(tomato));
   for (int i = 0; i < RARRAY_LEN(methods); i++)
   {
     const char *method_name = StringValuePtr(*(RARRAY_PTR(methods)+i));

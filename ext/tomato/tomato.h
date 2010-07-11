@@ -17,8 +17,12 @@ typedef VALUE (ruby_method_1)(VALUE);
 
 typedef struct {
   Persistent<Context> context;
+} V8Context;
+
+typedef struct {
   VALUE rb_instance;
   VALUE rb_references;
+  VALUE rb_v8;
 } V8Tomato;
 
 typedef struct {
@@ -35,7 +39,11 @@ extern VALUE cTomatoError;
 extern VALUE rb_cTime;
 extern void push_rb_reference(V8Tomato *tomato, VALUE ref);
 extern void pop_rb_reference(V8Tomato *tomato, VALUE ref);
+extern Persistent<Context> tomato_v8_context(V8Tomato *tomato);
 
+/* in v8.cpp */
+extern VALUE cV8;
+extern void v8_init(void);
 
 /* in object_chain.cpp */
 extern Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain);

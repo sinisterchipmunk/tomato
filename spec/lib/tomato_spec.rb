@@ -3,10 +3,6 @@ require 'spec_helper'
 describe Tomato do
   subject { Tomato.new }
 
-  it "should have the right V8 version" do
-    subject.version.should == "2.2.18"
-  end
-
   it "should build an anonymous Ruby object to mirror anonymous JS objects" do
     pending
   end

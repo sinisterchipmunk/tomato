@@ -86,7 +86,7 @@ VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
   Data_Get_Struct(self, V8Tomato, tomato);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato->context);
+  Context::Scope context_scope(tomato_v8_context(tomato));
   Handle<Value> value = find_or_create_object_chain(tomato, argv[2]);
   if (value->IsObject())
   {

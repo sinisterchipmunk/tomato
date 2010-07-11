@@ -5,7 +5,6 @@ static VALUE ruby_numeric_from(const Handle<Value> &number);
 static VALUE ruby_date_from(const Handle<Value> &date);
 static VALUE ruby_string_from(const Handle<Value> &value);
 static VALUE ruby_symbol_from(const Handle<Object> &value);
-static VALUE ruby_unwrapped_object_from(V8Tomato *tomato, const Handle<Object> &value);
 static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result);
 static VALUE ruby_hash_from(V8Tomato *tomato, const Handle<Object> &object);
 
@@ -50,7 +49,7 @@ static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result)
   }
   
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return nil. */
-  Handle<Value> json = tomato->context->Global()->Get(String::New("JSON"));
+  Handle<Value> json = tomato_v8_context(tomato)->Global()->Get(String::New("JSON"));
   if (json->IsObject())
   {
     Handle<Value> stringify = Handle<Object>::Cast(json)->Get(String::New("stringify"));
@@ -121,20 +120,10 @@ static VALUE ruby_numeric_from(const Handle<Value> &number)
   return DBL2NUM(number->NumberValue());
 }
 
-static VALUE ruby_unwrapped_object_from(V8Tomato *tomato, const Handle<Object> &value)
-{
-  VALUE receivers = rb_funcall2(tomato->rb_instance, rb_intern("receivers"), 0, 0);
-  int len = RARRAY_LEN(receivers);
-  int index = value->Get(String::New("_tomato_receiver_index"))->Int32Value();
-  if (len <= index)
-    return Qnil;
-  return *(RARRAY_PTR(receivers)+index);
-}
-
 Handle<Value> inspect_js(V8Tomato *tomato, Handle<Value> obj)
 {
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return an error. */
-  Handle<Value> json = tomato->context->Global()->Get(String::New("JSON"));
+  Handle<Value> json = tomato_v8_context(tomato)->Global()->Get(String::New("JSON"));
   if (json->IsObject())
   {
     Handle<Value> stringify = Handle<Object>::Cast(json)->Get(String::New("stringify"));
