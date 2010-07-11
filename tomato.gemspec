@@ -3332,7 +3332,6 @@ Gem::Specification.new do |s|
      "ext/tomato/external/v8/tools/windows-tick-processor.py",
      "ext/tomato/mkmf.log",
      "ext/tomato/object_chain.cpp",
-     "ext/tomato/object_chain.o",
      "ext/tomato/references.cpp",
      "ext/tomato/references.o",
      "ext/tomato/tomato.bundle",

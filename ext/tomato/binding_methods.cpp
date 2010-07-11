@@ -1,8 +1,8 @@
 #include "tomato.h"
-#include "binding_methods.h"
+#include "bindings.h"
 
-static VALUE bound_method_call(VALUE args);
-
+static VALUE call_rb_bound_method(VALUE args);
+static Handle<Value> bound_method(const Arguments& args);
 
 void tomatofy_function(Handle<Function> function, V8Tomato *tomato, VALUE receiver, Handle<Value> rb_method_name)
 {
@@ -10,8 +10,7 @@ void tomatofy_function(Handle<Function> function, V8Tomato *tomato, VALUE receiv
   function->Set(String::New("_tomato_rb_method_name"), rb_method_name);
 }
 
-
-Handle<Value> bound_method(const Arguments& args)
+static Handle<Value> call_js_bound_method(const Arguments& args)
 {
   VALUE receiver;
   ID rb_method_id;
@@ -26,7 +25,7 @@ Handle<Value> bound_method(const Arguments& args)
   store_args(tomato, rbargs, args);
   int error;
   
-  result = rb_protect(bound_method_call, rbargs, &error);
+  result = rb_protect(call_rb_bound_method, rbargs, &error);
   if (error) return ThrowException(js_error_from(rb_gv_get("$!")));
   return js_value_of(tomato, result);
 }
@@ -39,7 +38,7 @@ void store_args(V8Tomato *tomato, VALUE rbargs, const Arguments &args)
     rb_ary_store(rbargs, offset+i, ruby_value_of(tomato, args[i]));
 }
 
-static VALUE bound_method_call(VALUE args)
+static VALUE call_rb_bound_method(VALUE args)
 {
   VALUE receiver = rb_ary_shift(args);
   VALUE rb_method_id = SYM2ID(rb_ary_shift(args));
@@ -67,6 +66,14 @@ int store_rb_message(const Arguments &args, V8Tomato **out_tomato, VALUE *out_re
   return 0;
 }
 
+void bind_method(V8Tomato *tomato, VALUE reference, Handle<Object> object, const char *rb_method_name, const char *js_method_name)
+{
+  Handle<Function> function = FunctionTemplate::New(call_js_bound_method)->GetFunction();
+  tomatofy_function(function, tomato, reference, String::New(rb_method_name));
+  function->SetName(String::New(js_method_name));
+  object->Set(String::New(js_method_name), function);
+}
+
 VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
 {
   if (argc != 4) rb_raise(rb_eArgError,
@@ -83,13 +90,7 @@ VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
   Handle<Value> value = find_or_create_object_chain(tomato, argv[2]);
   if (value->IsObject())
   {
-    Handle<Object> object = Handle<Object>::Cast(value);
-    Handle<Function> function = FunctionTemplate::New(bound_method)->GetFunction();
-
-    tomatofy_function(function, tomato, reference, String::New(rb_method_name));
-    function->SetName(String::New(js_method_name));
-
-    object->Set(String::New(js_method_name), function);
+    bind_method(tomato, reference, Handle<Object>::Cast(value), rb_method_name, js_method_name);
     return Qtrue;
   }
   return Qfalse;
