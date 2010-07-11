@@ -27,9 +27,8 @@ VALUE fTomato_bind_class(VALUE self, VALUE receiver_index, VALUE chain)
   {
     Handle<Object> object = Handle<Object>::Cast(parent);
     Handle<Function> function = FunctionTemplate::New(ruby_class_constructor)->GetFunction();
-
-    function->Set(String::New("_tomato"), External::New(tomato));
-    function->Set(String::New("_tomato_receiver_index"), Int32::New(FIX2INT(receiver_index)));
+    
+    tomatofy_function(function, tomato, FIX2INT(receiver_index), method_name);
     function->SetName(method_name);
 
     Handle<Value> current_value = object->Get(method_name);
@@ -64,13 +63,7 @@ v8::Handle<v8::Value> ruby_class_constructor(const Arguments &args)
   VALUE receiver;
   ID rb_method_id;
   V8Tomato *tomato;
-  int code = store_rb_message(args, &tomato, &receiver, &rb_method_id);
-  switch(code)
-  {
-    case -1: return ThrowException(String::New("Error: _tomato is not an object (BUG: please report)"));
-    case -2: return ThrowException(String::New("Error: _tomato_receiver_index is not an Int32 (BUG: please report)"));
-    case -3: return ThrowException(String::New("Error: _tomato_receiver_index is greater than @receivers.length (BUG: please report)"));
-  };
+  TRY_JS(store_rb_message(args, &tomato, &receiver, &rb_method_id));
 
   VALUE rbargs = rb_ary_new2(1+args.Length());
   rb_ary_store(rbargs, 0, receiver);
@@ -104,8 +97,7 @@ Handle<Value> bind_methods(Local<Object> js, VALUE rb, V8Tomato *tomato)
     method_name = String::New(StringValuePtr(*(RARRAY_PTR(methods)+i)));
     Handle<Function> function = FunctionTemplate::New(bound_method)->GetFunction();
   
-    function->Set(String::New("_tomato"), External::New(tomato));
-    function->Set(String::New("_tomato_receiver_index"), Int32::New(receiver_index));
+    tomatofy_function(function, tomato, receiver_index, method_name);
     function->SetName(method_name);
   
     js->Set(method_name, function);

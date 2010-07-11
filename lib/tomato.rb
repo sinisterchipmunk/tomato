@@ -1,3 +1,8 @@
+unless defined?(Gem)
+  require 'rubygems'
+  gem 'sc-core-ext'
+end
+
 $LOAD_PATH << File.expand_path("../../ext/tomato", __FILE__)
 require 'tomato.so'
 require 'sc-core-ext'
@@ -30,12 +35,19 @@ class Tomato
   #   t.bind_method(:inspect, my_funky_object, :to => "funky_objects.my_object")
   #   t.run("funky_objects.my_object.inspect();")
   #
+  # You can also change the name of the method so that its JavaScript version is different from its Ruby version:
+  #
+  #   t.bind_method(:to_s, :as => "toString")
+  #
   def bind_method(method_name, *args)
     options = args.extract_options!
     receiver = options[:object] || args.first || self
     chain = options[:to] ? split_chain(options[:to]) : nil
+    as = options[:as] || method_name
+    
     # Bind the method to JS.
-    _bind_method(method_name, receiver_index(receiver), chain)
+    as = as.to_sym if as.respond_to?(:to_sym)
+    _bind_method(method_name, receiver_index(receiver), chain, as)
   end
   
   # Binds an entire Ruby object to the specified JavaScript object chain.

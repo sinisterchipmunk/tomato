@@ -44,6 +44,7 @@ extern Handle<Value> inspect_rb(VALUE value);
 extern void raise_error(TryCatch *try_catch);
 extern Local<Object> js_error_from(VALUE ruby_error);
 extern void err_init(void);
+extern Local<Object> js_error_new(const char *str);
 
 /* in v8.cpp */
 extern VALUE execute(V8Tomato *tomato, Handle<String> source, Handle<Value> name);

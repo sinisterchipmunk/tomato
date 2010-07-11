@@ -5,8 +5,14 @@ VALUE eTransError = Qnil;
 Local<Object> js_error_from(VALUE ruby_error)
 {
   VALUE message = rb_funcall(ruby_error, rb_intern("to_s"), 0);
-  Local<Object> js_error = Local<Object>::Cast(Exception::Error(String::New(StringValuePtr(message))));
+  Local<Object> js_error = js_error_new(StringValuePtr(message));
   js_error->Set(String::New("_is_ruby_error"), Boolean::New(true), DontEnum);
+  return js_error;
+}
+
+Local<Object> js_error_new(const char *str)
+{
+  Local<Object> js_error = Local<Object>::Cast(Exception::Error(String::New(str)));
   return js_error;  
 }
 
