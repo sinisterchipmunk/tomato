@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new("> 1.3.1") if s.respond_to? :required_rubygems_version=
   s.authors = ["Colin MacKenzie IV"]
-  s.date = %q{2010-07-10}
+  s.date = %q{2010-07-11}
   s.description = %q{Leverages Google's V8 JavaScript library to interface Ruby code with JavaScript code.}
   s.email = %q{sinisterchipmunk@gmail.com}
   s.extensions = ["ext/tomato/extconf.rb"]
@@ -27,8 +27,6 @@ Gem::Specification.new do |s|
      "ext/tomato/binding_methods.cpp",
      "ext/tomato/binding_methods.h",
      "ext/tomato/binding_methods.o",
-     "ext/tomato/conftest.dSYM/Contents/Info.plist",
-     "ext/tomato/conftest.dSYM/Contents/Resources/DWARF/conftest",
      "ext/tomato/conversions_to_js.cpp",
      "ext/tomato/conversions_to_js.o",
      "ext/tomato/conversions_to_rb.cpp",
@@ -3335,16 +3333,21 @@ Gem::Specification.new do |s|
      "ext/tomato/mkmf.log",
      "ext/tomato/object_chain.cpp",
      "ext/tomato/object_chain.o",
+     "ext/tomato/references.cpp",
+     "ext/tomato/references.o",
      "ext/tomato/tomato.bundle",
      "ext/tomato/tomato.cpp",
      "ext/tomato/tomato.h",
      "ext/tomato/tomato.o",
      "ext/tomato/v8.cpp",
      "ext/tomato/v8.o",
+     "ext/tomato/value_wrapper.cpp",
+     "ext/tomato/value_wrapper.o",
      "lib/tomato.rb",
      "lib/tomato/console.rb",
      "pkg/tomato-0.0.1.prealpha1.gem",
      "pkg/tomato-0.0.1.prealpha2.gem",
+     "pkg/tomato-0.0.1.prealpha3.gem",
      "spec/lib/bound_class_spec.rb",
      "spec/lib/bound_methods_spec.rb",
      "spec/lib/bound_object_spec.rb",
@@ -3353,7 +3356,6 @@ Gem::Specification.new do |s|
      "spec/lib/tomato_spec.rb",
      "spec/spec_helper.rb",
      "t.rb",
-     "tomato-0.0.1.prealpha3.gem",
      "tomato.gemspec"
   ]
   s.homepage = %q{http://www.thoughtsincomputation.com}
