@@ -3,7 +3,7 @@
 
 static VALUE create_new(VALUE args);
 static v8::Handle<v8::Value> ruby_class_constructor(const Arguments &args);
-static Handle<Value> bind_methods(Local<Object> js, VALUE rb, V8Tomato *tomato);
+static Handle<Value> bind_methods(Local<Object> js, VALUE rb, Tomato *tomato);
 static Handle<Value> bound_getter(Local<String> property, const AccessorInfo &info);
 static void bound_setter(Local<String> property, Local<Value> value, const AccessorInfo &info);
 static VALUE protected_get(VALUE args);
@@ -11,11 +11,11 @@ static VALUE protected_set(VALUE args);
 
 VALUE fTomato_bind_class(VALUE self, VALUE receiver, VALUE chain)
 {
-  V8Tomato *tomato;
-  Data_Get_Struct(self, V8Tomato, tomato);
+  Tomato *tomato;
+  Data_Get_Struct(self, Tomato, tomato);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato_v8_context(tomato));
+  Context::Scope context_scope(tomato->context());
   VALUE js_class_name = rb_ary_pop(chain);
   // This is kind of a misnomer. We're creating a JavaScript function ("method") to stand in for
   // the Ruby class. So the method_name has to be the Ruby class name. Consider: "new" is not a 
@@ -60,7 +60,7 @@ v8::Handle<v8::Value> ruby_class_constructor(const Arguments &args)
  
   VALUE receiver;
   ID rb_method_id;
-  V8Tomato *tomato;
+  Tomato *tomato;
   TRY_JS(store_rb_message(args, &tomato, &receiver, &rb_method_id));
 
   VALUE rbargs = rb_ary_new2(1+args.Length());
@@ -79,12 +79,12 @@ v8::Handle<v8::Value> ruby_class_constructor(const Arguments &args)
   return bind_methods(holder, result, tomato);
 }
 
-static Handle<Value> bind_methods(Local<Object> js_object, VALUE rb_reference, V8Tomato *tomato)
+static Handle<Value> bind_methods(Local<Object> js_object, VALUE rb_reference, Tomato *tomato)
 {
   VALUE methods = rb_funcall(rb_reference, rb_intern("public_methods"), 0);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato_v8_context(tomato));
+  Context::Scope context_scope(tomato->context());
   for (int i = 0; i < RARRAY_LEN(methods); i++)
   {
     const char *method_name = StringValuePtr(*(RARRAY_PTR(methods)+i));

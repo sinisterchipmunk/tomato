@@ -48,36 +48,10 @@ static VALUE fV8_version(VALUE self)
   return rb_str_new2(V8::GetVersion());
 }
 
-// Executes a string within the current v8 context.
-VALUE execute(V8Tomato *tomato, Handle<String> source, Handle<Value> name)
-{
-  HandleScope handle_scope;
-  TryCatch try_catch;
-  Handle<Script> script = Script::Compile(source, name);
-  if (script.IsEmpty())
-  {
-    raise_error(&try_catch);
-    return Qnil;
-  }
-  else
-  {
-    Handle<Value> result = script->Run();
-    if (result.IsEmpty())
-    {
-      raise_error(&try_catch);
-      return Qnil;
-    }
-    else
-    {
-      return ruby_value_of(tomato, result);
-    }
-  }
-}
-
 static v8::Handle<v8::Value> debug(const Arguments &args)
 {
   Handle<Value> arg;
-  V8Tomato *tomato = (V8Tomato *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato")))->Value());
+  Tomato *tomato = (Tomato *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato")))->Value());
   for (int i = 0; i < args.Length(); i++)
   {
     arg = args[i];

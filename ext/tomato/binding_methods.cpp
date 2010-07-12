@@ -4,7 +4,7 @@
 static VALUE call_rb_bound_method(VALUE args);
 static Handle<Value> bound_method(const Arguments& args);
 
-void tomatofy_function(Handle<Function> function, V8Tomato *tomato, VALUE receiver, Handle<Value> rb_method_name)
+void tomatofy_function(Handle<Function> function, Tomato *tomato, VALUE receiver, Handle<Value> rb_method_name)
 {
   register_value_wrapper(function, tomato, receiver);
   function->Set(String::New("_tomato_rb_method_name"), rb_method_name);
@@ -14,7 +14,7 @@ static Handle<Value> call_js_bound_method(const Arguments& args)
 {
   VALUE receiver;
   ID rb_method_id;
-  V8Tomato *tomato;
+  Tomato *tomato;
   VALUE result;
 
   TRY_JS(store_rb_message(args, &tomato, &receiver, &rb_method_id));
@@ -30,7 +30,7 @@ static Handle<Value> call_js_bound_method(const Arguments& args)
   return js_value_of(tomato, result);
 }
 
-void store_args(V8Tomato *tomato, VALUE rbargs, const Arguments &args)
+void store_args(Tomato *tomato, VALUE rbargs, const Arguments &args)
 {
   int length = args.Length();
   int offset = RARRAY_LEN(rbargs);
@@ -46,7 +46,7 @@ static VALUE call_rb_bound_method(VALUE args)
   return result;
 }
 
-int store_rb_message(const Arguments &args, V8Tomato **out_tomato, VALUE *out_receiver, ID *out_method_id)
+int store_rb_message(const Arguments &args, Tomato **out_tomato, VALUE *out_receiver, ID *out_method_id)
 {
   // get the function
   Handle<Function> function = args.Callee();
@@ -66,7 +66,7 @@ int store_rb_message(const Arguments &args, V8Tomato **out_tomato, VALUE *out_re
   return 0;
 }
 
-void bind_method(V8Tomato *tomato, VALUE reference, Handle<Object> object, const char *rb_method_name, const char *js_method_name)
+void bind_method(Tomato *tomato, VALUE reference, Handle<Object> object, const char *rb_method_name, const char *js_method_name)
 {
   Handle<Function> function = FunctionTemplate::New(call_js_bound_method)->GetFunction();
   tomatofy_function(function, tomato, reference, String::New(rb_method_name));
@@ -82,11 +82,11 @@ VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self)
   const char *js_method_name = rb_id2name(rb_to_id(argv[3]));
   VALUE reference = argv[1];
   
-  V8Tomato *tomato;
-  Data_Get_Struct(self, V8Tomato, tomato);
+  Tomato *tomato;
+  Data_Get_Struct(self, Tomato, tomato);
   
   HandleScope handle_scope;
-  Context::Scope context_scope(tomato_v8_context(tomato));
+  Context::Scope context_scope(tomato->context());
   Handle<Value> value = find_or_create_object_chain(tomato, argv[2]);
   if (value->IsObject())
   {

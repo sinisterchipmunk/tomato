@@ -1,8 +1,8 @@
 #include "tomato.h"
 
-Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain)
+Handle<Value> find_or_create_object_chain(Tomato *tomato, VALUE chain)
 {
-  Handle<Value> value = tomato_v8_context(tomato)->Global();
+  Handle<Value> value = tomato->context()->Global();
   if (value->IsObject())
   {
     Handle<Object> object = Handle<Object>::Cast(value);

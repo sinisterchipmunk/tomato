@@ -115,13 +115,4 @@ class Tomato
   def split_chain(str)
     str.split(/\./)
   end
-  
-#  def receivers
-#    @receivers ||= []
-#  end
-#  
-#  def receiver_index(receiver)
-#    receivers << receiver unless receivers.include?(receiver)
-#    receivers.index(receiver)
-#  end
 end

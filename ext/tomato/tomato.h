@@ -19,15 +19,31 @@ typedef struct {
   Persistent<Context> context;
 } V8Context;
 
-typedef struct {
-  VALUE rb_instance;
-  VALUE rb_references;
-  VALUE rb_v8;
-} V8Tomato;
+//typedef struct {
+//  VALUE rb_instance;
+//  VALUE rb_references;
+//} Tomato;
+
+class Tomato
+{
+  private:
+    VALUE execute(const char *javascript, const char *filename);
+    VALUE compile_and_run(Handle<String> source, Handle<Value> name);
+    
+  public:
+    VALUE rb_instance;
+    VALUE rb_references;
+    
+    Tomato(VALUE klass);
+    ~Tomato();
+    void rb_gc_mark();
+    Persistent<Context> context();
+    VALUE run(int argc, VALUE *argv);
+};
 
 typedef struct {
   VALUE value;
-  V8Tomato *tomato;
+  Tomato *tomato;
 } ValueWrapper;
 
 // Extracts a C string from a V8 Utf8Value.
@@ -37,24 +53,23 @@ typedef struct {
 extern VALUE cTomato;
 extern VALUE cTomatoError;
 extern VALUE rb_cTime;
-extern void push_rb_reference(V8Tomato *tomato, VALUE ref);
-extern void pop_rb_reference(V8Tomato *tomato, VALUE ref);
-extern Persistent<Context> tomato_v8_context(V8Tomato *tomato);
+extern void push_rb_reference(Tomato *tomato, VALUE ref);
+extern void pop_rb_reference(Tomato *tomato, VALUE ref);
 
 /* in v8.cpp */
 extern VALUE cV8;
 extern void v8_init(void);
 
 /* in object_chain.cpp */
-extern Handle<Value> find_or_create_object_chain(V8Tomato *tomato, VALUE chain);
+extern Handle<Value> find_or_create_object_chain(Tomato *tomato, VALUE chain);
 extern VALUE fTomato_bind_class(VALUE self, VALUE klass, VALUE chain);
 
 /* in conversions_to_rb.cpp */
-extern VALUE ruby_value_of(V8Tomato *tomato, Handle<Value> result);
-extern Handle<Value> inspect_js(V8Tomato *tomato, Handle<Value> obj);
+extern VALUE ruby_value_of(Tomato *tomato, Handle<Value> result);
+extern Handle<Value> inspect_js(Tomato *tomato, Handle<Value> obj);
 
 /* in conversions_to_js.cpp */
-extern Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value);
+extern Handle<Value> js_value_of(Tomato *tomato,  VALUE value);
 extern Handle<Value> inspect_rb(VALUE value);
 
 /* in errors.cpp */
@@ -63,14 +78,11 @@ extern Local<Object> js_error_from(VALUE ruby_error);
 extern void err_init(void);
 extern Local<Object> js_error_new(const char *str);
 
-/* in v8.cpp */
-extern VALUE execute(V8Tomato *tomato, Handle<String> source, Handle<Value> name);
-
 /* in binding_methods.cpp */
 extern VALUE fTomato_bind_method(int argc, VALUE *argv, VALUE self);
 
 /* in value_wrapper.cpp */
-extern void register_value_wrapper(Handle<Object> target, V8Tomato *tomato, VALUE value);
+extern void register_value_wrapper(Handle<Object> target, Tomato *tomato, VALUE value);
 extern ValueWrapper *extract_value_wrapper(Handle<Object> target);
 
 #endif//TOMATO_H

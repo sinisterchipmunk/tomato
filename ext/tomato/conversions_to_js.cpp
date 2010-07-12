@@ -1,12 +1,12 @@
 #include "tomato.h"
 
-static Handle<Value> js_array_from(V8Tomato *tomato, VALUE value);
-static Handle<Value> js_hash_from(V8Tomato *tomato, VALUE value);
+static Handle<Value> js_array_from(Tomato *tomato, VALUE value);
+static Handle<Value> js_hash_from(Tomato *tomato, VALUE value);
 static Handle<Value> js_symbol_to_string(const Arguments& args);
 static Handle<Value> js_symbol_from(VALUE value);
 static Handle<Value> js_date_from(VALUE value);
 
-Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value)
+Handle<Value> js_value_of(Tomato *tomato,  VALUE value)
 {
   switch(TYPE(value))
   {
@@ -46,7 +46,7 @@ Handle<Value> js_value_of(V8Tomato *tomato,  VALUE value)
   return inspect_rb(value);  
 }
 
-Handle<Value> js_array_from(V8Tomato *tomato, VALUE value)
+Handle<Value> js_array_from(Tomato *tomato, VALUE value)
 {
   Handle<Array> array;
   int size, i;
@@ -91,7 +91,7 @@ static Handle<Value> js_symbol_to_string(const Arguments& args)
   return symbol->Get(String::New("symbol"));
 }
 
-Handle<Value> js_hash_from(V8Tomato *tomato, VALUE value)
+Handle<Value> js_hash_from(Tomato *tomato, VALUE value)
 {
   VALUE rb_keys   = rb_funcall(value, rb_intern("keys"), 0);
   VALUE rb_values = rb_funcall(value, rb_intern("values"), 0);

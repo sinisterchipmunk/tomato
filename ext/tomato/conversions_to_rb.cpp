@@ -1,14 +1,14 @@
 #include "tomato.h"
 
-static VALUE ruby_array_from(V8Tomato *tomato, Handle<Array> result);
+static VALUE ruby_array_from(Tomato *tomato, Handle<Array> result);
 static VALUE ruby_numeric_from(const Handle<Value> &number);
 static VALUE ruby_date_from(const Handle<Value> &date);
 static VALUE ruby_string_from(const Handle<Value> &value);
 static VALUE ruby_symbol_from(const Handle<Object> &value);
-static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result);
-static VALUE ruby_hash_from(V8Tomato *tomato, const Handle<Object> &object);
+static VALUE ruby_object_from(Tomato *tomato, Handle<Value> result);
+static VALUE ruby_hash_from(Tomato *tomato, const Handle<Object> &object);
 
-VALUE ruby_value_of(V8Tomato *tomato, Handle<Value> result)
+VALUE ruby_value_of(Tomato *tomato, Handle<Value> result)
 {
   if (result->IsUndefined()) { return ID2SYM(rb_intern("undefined")); }
   if (result->IsNull())      { return Qnil; }
@@ -31,7 +31,7 @@ VALUE ruby_value_of(V8Tomato *tomato, Handle<Value> result)
 
 /* First checks for any special cases set up internally (i.e. Hash). If all else fails, returns the JSON for this
    object. */
-static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result)
+static VALUE ruby_object_from(Tomato *tomato, Handle<Value> result)
 {
   if (result->IsObject())
   {
@@ -49,7 +49,7 @@ static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result)
   }
   
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return nil. */
-  Handle<Value> json = tomato_v8_context(tomato)->Global()->Get(String::New("JSON"));
+  Handle<Value> json = tomato->context()->Global()->Get(String::New("JSON"));
   if (json->IsObject())
   {
     Handle<Value> stringify = Handle<Object>::Cast(json)->Get(String::New("stringify"));
@@ -67,7 +67,7 @@ static VALUE ruby_object_from(V8Tomato *tomato, Handle<Value> result)
   return ID2SYM(rb_intern("unknown"));
 }
 
-static VALUE ruby_hash_from(V8Tomato *tomato, const Handle<Object> &object)
+static VALUE ruby_hash_from(Tomato *tomato, const Handle<Object> &object)
 {
   VALUE hash = rb_hash_new();
   
@@ -102,7 +102,7 @@ static VALUE ruby_date_from(const Handle<Value> &value)
   return rb_funcall(rb_cTime, rb_intern("at"), 1, DBL2NUM(date->NumberValue() / 1000.0));
 }
 
-static VALUE ruby_array_from(V8Tomato *tomato, Handle<Array> array)
+static VALUE ruby_array_from(Tomato *tomato, Handle<Array> array)
 {
   unsigned int length = array->Length();
   VALUE rbarr = rb_ary_new2(length);
@@ -120,10 +120,10 @@ static VALUE ruby_numeric_from(const Handle<Value> &number)
   return DBL2NUM(number->NumberValue());
 }
 
-Handle<Value> inspect_js(V8Tomato *tomato, Handle<Value> obj)
+Handle<Value> inspect_js(Tomato *tomato, Handle<Value> obj)
 {
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return an error. */
-  Handle<Value> json = tomato_v8_context(tomato)->Global()->Get(String::New("JSON"));
+  Handle<Value> json = tomato->context()->Global()->Get(String::New("JSON"));
   if (json->IsObject())
   {
     Handle<Value> stringify = Handle<Object>::Cast(json)->Get(String::New("stringify"));

@@ -8,7 +8,7 @@ static VALUE rb_reference_ary(VALUE ref)
   return ary;
 }
 
-void push_rb_reference(V8Tomato *tomato, VALUE ref)
+void push_rb_reference(Tomato *tomato, VALUE ref)
 {
   VALUE ary = rb_reference_ary(ref);
   int count = 0;
@@ -18,7 +18,7 @@ void push_rb_reference(V8Tomato *tomato, VALUE ref)
   rb_hash_aset(tomato->rb_references, ary, count+1);  
 }
 
-void pop_rb_reference(V8Tomato *tomato, VALUE ref)
+void pop_rb_reference(Tomato *tomato, VALUE ref)
 {
   VALUE ary = rb_reference_ary(ref);
   int count;

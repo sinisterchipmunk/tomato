@@ -7,7 +7,7 @@ static void free_value_wrapper(Persistent<Value> object, void* parameter)
   delete wrapper;
 }
 
-void register_value_wrapper(Handle<Object> target, V8Tomato *tomato, VALUE value)
+void register_value_wrapper(Handle<Object> target, Tomato *tomato, VALUE value)
 {
   push_rb_reference(tomato, value);
   ValueWrapper *wrapper = new ValueWrapper;
