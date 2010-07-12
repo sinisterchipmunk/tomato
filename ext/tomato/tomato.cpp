@@ -130,9 +130,6 @@ void Init_tomato(void)
   /* instance method "_bind_class" */
   rb_define_method(cTomato, "_bind_class", (ruby_method_vararg *)&fTomato_bind_class, 2);
   
-  /* init error-specific junk */
-  err_init();
-  
   /* init V8-specific junk */
   v8_init();
 }

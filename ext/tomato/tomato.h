@@ -75,7 +75,6 @@ extern Handle<Value> inspect_rb(VALUE value);
 /* in errors.cpp */
 extern void raise_error(TryCatch *try_catch);
 extern Local<Object> js_error_from(VALUE ruby_error);
-extern void err_init(void);
 extern Local<Object> js_error_new(const char *str);
 
 /* in binding_methods.cpp */

@@ -1,7 +1,5 @@
 #include "tomato.h"
 
-VALUE eTransError = Qnil;
-
 Local<Object> js_error_from(VALUE ruby_error)
 {
   VALUE message = rb_funcall(ruby_error, rb_intern("to_s"), 0);
@@ -15,12 +13,6 @@ Local<Object> js_error_new(const char *str)
   Local<Object> js_error = Local<Object>::Cast(Exception::Error(String::New(str)));
   return js_error;  
 }
-
-void err_init(void)
-{
-  eTransError = rb_define_class_under(cTomato, "TranslatableError", cTomatoError);
-}
-
 
 /* The following was adapted from samples/shell.cc in v8 project. */
 void raise_error(TryCatch *try_catch)
