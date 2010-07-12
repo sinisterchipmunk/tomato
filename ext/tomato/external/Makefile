@@ -12,10 +12,10 @@ debug: $(LIBV8_G)
 	cp $(LIBV8_G) $(LIBV8)
 
 $(LIBV8): $(SCONS) $(V8SRC)
-	cd build/v8 && GCC_VERSION=$(GCC_VERSION) ../scons/install/bin/scons arch=$(ARCH)
+	cd build/v8 && GCC_VERSION=$(GCC_VERSION) ../scons/install/bin/scons arch=$(ARCH) library=static
 
 $(LIBV8_G): $(SCONS) $(V8SRC)
-	cd build/v8 && GCC_VERSION=$(GCC_VERSION) ../scons/install/bin/scons arch=$(ARCH) mode=debug
+	cd build/v8 && GCC_VERSION=$(GCC_VERSION) ../scons/install/bin/scons arch=$(ARCH) library=static mode=debug
 
 $(SCONS): $(SCONSSRC)
 	mkdir -p $(SCONSSRC)/install

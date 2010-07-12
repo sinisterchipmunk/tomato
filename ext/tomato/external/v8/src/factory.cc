@@ -96,6 +96,12 @@ Handle<String> Factory::NewStringFromTwoByte(Vector<const uc16> string,
 }
 
 
+Handle<String> Factory::NewRawAsciiString(int length,
+                                          PretenureFlag pretenure) {
+  CALL_HEAP_FUNCTION(Heap::AllocateRawAsciiString(length, pretenure), String);
+}
+
+
 Handle<String> Factory::NewRawTwoByteString(int length,
                                             PretenureFlag pretenure) {
   CALL_HEAP_FUNCTION(Heap::AllocateRawTwoByteString(length, pretenure), String);
@@ -274,8 +280,19 @@ Handle<Map> Factory::CopyMap(Handle<Map> src,
   return copy;
 }
 
+
 Handle<Map> Factory::CopyMapDropTransitions(Handle<Map> src) {
   CALL_HEAP_FUNCTION(src->CopyDropTransitions(), Map);
+}
+
+
+Handle<Map> Factory::GetFastElementsMap(Handle<Map> src) {
+  CALL_HEAP_FUNCTION(src->GetFastElementsMap(), Map);
+}
+
+
+Handle<Map> Factory::GetSlowElementsMap(Handle<Map> src) {
+  CALL_HEAP_FUNCTION(src->GetSlowElementsMap(), Map);
 }
 
 

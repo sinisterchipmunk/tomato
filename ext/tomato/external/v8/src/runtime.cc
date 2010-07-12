@@ -678,6 +678,12 @@ static Object* Runtime_GetOwnProperty(Arguments args) {
 }
 
 
+static Object* Runtime_PreventExtensions(Arguments args) {
+  ASSERT(args.length() == 1);
+  CONVERT_CHECKED(JSObject, obj, args[0]);
+  return obj->PreventExtensions();
+}
+
 static Object* Runtime_IsExtensible(Arguments args) {
   ASSERT(args.length() == 1);
   CONVERT_CHECKED(JSObject, obj, args[0]);
@@ -2279,6 +2285,134 @@ static Object* StringReplaceRegExpWithString(String* subject,
 }
 
 
+template <typename ResultSeqString>
+static Object* StringReplaceRegExpWithEmptyString(String* subject,
+                                                  JSRegExp* regexp,
+                                                  JSArray* last_match_info) {
+  ASSERT(subject->IsFlat());
+
+  HandleScope handles;
+
+  Handle<String> subject_handle(subject);
+  Handle<JSRegExp> regexp_handle(regexp);
+  Handle<JSArray> last_match_info_handle(last_match_info);
+  Handle<Object> match = RegExpImpl::Exec(regexp_handle,
+                                          subject_handle,
+                                          0,
+                                          last_match_info_handle);
+  if (match.is_null()) return Failure::Exception();
+  if (match->IsNull()) return *subject_handle;
+
+  ASSERT(last_match_info_handle->HasFastElements());
+
+  HandleScope loop_scope;
+  int start, end;
+  {
+    AssertNoAllocation match_info_array_is_not_in_a_handle;
+    FixedArray* match_info_array =
+        FixedArray::cast(last_match_info_handle->elements());
+
+    start = RegExpImpl::GetCapture(match_info_array, 0);
+    end = RegExpImpl::GetCapture(match_info_array, 1);
+  }
+
+  int length = subject->length();
+  int new_length = length - (end - start);
+  if (new_length == 0) {
+    return Heap::empty_string();
+  }
+  Handle<ResultSeqString> answer;
+  if (ResultSeqString::kHasAsciiEncoding) {
+    answer =
+        Handle<ResultSeqString>::cast(Factory::NewRawAsciiString(new_length));
+  } else {
+    answer =
+        Handle<ResultSeqString>::cast(Factory::NewRawTwoByteString(new_length));
+  }
+
+  // If the regexp isn't global, only match once.
+  if (!regexp_handle->GetFlags().is_global()) {
+    if (start > 0) {
+      String::WriteToFlat(*subject_handle,
+                          answer->GetChars(),
+                          0,
+                          start);
+    }
+    if (end < length) {
+      String::WriteToFlat(*subject_handle,
+                          answer->GetChars() + start,
+                          end,
+                          length);
+    }
+    return *answer;
+  }
+
+  int prev = 0;  // Index of end of last match.
+  int next = 0;  // Start of next search (prev unless last match was empty).
+  int position = 0;
+
+  do {
+    if (prev < start) {
+      // Add substring subject[prev;start] to answer string.
+      String::WriteToFlat(*subject_handle,
+                          answer->GetChars() + position,
+                          prev,
+                          start);
+      position += start - prev;
+    }
+    prev = end;
+    next = end;
+    // Continue from where the match ended, unless it was an empty match.
+    if (start == end) {
+      next++;
+      if (next > length) break;
+    }
+    match = RegExpImpl::Exec(regexp_handle,
+                             subject_handle,
+                             next,
+                             last_match_info_handle);
+    if (match.is_null()) return Failure::Exception();
+    if (match->IsNull()) break;
+
+    ASSERT(last_match_info_handle->HasFastElements());
+    HandleScope loop_scope;
+    {
+      AssertNoAllocation match_info_array_is_not_in_a_handle;
+      FixedArray* match_info_array =
+          FixedArray::cast(last_match_info_handle->elements());
+      start = RegExpImpl::GetCapture(match_info_array, 0);
+      end = RegExpImpl::GetCapture(match_info_array, 1);
+    }
+  } while (true);
+
+  if (prev < length) {
+    // Add substring subject[prev;length] to answer string.
+    String::WriteToFlat(*subject_handle,
+                        answer->GetChars() + position,
+                        prev,
+                        length);
+    position += length - prev;
+  }
+
+  if (position == 0) {
+    return Heap::empty_string();
+  }
+
+  // Shorten string and fill
+  int string_size = ResultSeqString::SizeFor(position);
+  int allocated_string_size = ResultSeqString::SizeFor(new_length);
+  int delta = allocated_string_size - string_size;
+
+  answer->set_length(position);
+  if (delta == 0) return *answer;
+
+  Address end_of_string = answer->address() + string_size;
+  Heap::CreateFillerObjectAt(end_of_string, delta);
+
+  return *answer;
+}
+
+
 static Object* Runtime_StringReplaceRegExpWithString(Arguments args) {
   ASSERT(args.length() == 4);
 
@@ -2304,6 +2438,16 @@ static Object* Runtime_StringReplaceRegExpWithString(Arguments args) {
   CONVERT_CHECKED(JSArray, last_match_info, args[3]);
 
   ASSERT(last_match_info->HasFastElements());
+
+  if (replacement->length() == 0) {
+    if (subject->HasOnlyAsciiChars()) {
+      return StringReplaceRegExpWithEmptyString<SeqAsciiString>(
+          subject, regexp, last_match_info);
+    } else {
+      return StringReplaceRegExpWithEmptyString<SeqTwoByteString>(
+          subject, regexp, last_match_info);
+    }
+  }
 
   return StringReplaceRegExpWithString(subject,
                                        regexp,
@@ -2782,13 +2926,17 @@ int Runtime::StringMatch(Handle<String> sub,
   // algorithm is unnecessary overhead.
   if (pattern_length == 1) {
     AssertNoAllocation no_heap_allocation;  // ensure vectors stay valid
-    if (sub->IsAsciiRepresentation()) {
+    String* seq_sub = *sub;
+    if (seq_sub->IsConsString()) {
+      seq_sub = ConsString::cast(seq_sub)->first();
+    }
+    if (seq_sub->IsAsciiRepresentation()) {
       uc16 pchar = pat->Get(0);
       if (pchar > String::kMaxAsciiCharCode) {
         return -1;
       }
       Vector<const char> ascii_vector =
-        sub->ToAsciiVector().SubVector(start_index, subject_length);
+          seq_sub->ToAsciiVector().SubVector(start_index, subject_length);
       const void* pos = memchr(ascii_vector.start(),
                                static_cast<const char>(pchar),
                                static_cast<size_t>(ascii_vector.length()));
@@ -2798,7 +2946,9 @@ int Runtime::StringMatch(Handle<String> sub,
       return static_cast<int>(reinterpret_cast<const char*>(pos)
           - ascii_vector.start() + start_index);
     }
-    return SingleCharIndexOf(sub->ToUC16Vector(), pat->Get(0), start_index);
+    return SingleCharIndexOf(seq_sub->ToUC16Vector(),
+                             pat->Get(0),
+                             start_index);
   }
 
   if (!pat->IsFlat()) {
@@ -2806,19 +2956,29 @@ int Runtime::StringMatch(Handle<String> sub,
   }
 
   AssertNoAllocation no_heap_allocation;  // ensure vectors stay valid
+  // Extract flattened substrings of cons strings before determining asciiness.
+  String* seq_sub = *sub;
+  if (seq_sub->IsConsString()) {
+    seq_sub = ConsString::cast(seq_sub)->first();
+  }
+  String* seq_pat = *pat;
+  if (seq_pat->IsConsString()) {
+    seq_pat = ConsString::cast(seq_pat)->first();
+  }
+
   // dispatch on type of strings
-  if (pat->IsAsciiRepresentation()) {
-    Vector<const char> pat_vector = pat->ToAsciiVector();
-    if (sub->IsAsciiRepresentation()) {
-      return StringSearch(sub->ToAsciiVector(), pat_vector, start_index);
+  if (seq_pat->IsAsciiRepresentation()) {
+    Vector<const char> pat_vector = seq_pat->ToAsciiVector();
+    if (seq_sub->IsAsciiRepresentation()) {
+      return StringSearch(seq_sub->ToAsciiVector(), pat_vector, start_index);
     }
-    return StringSearch(sub->ToUC16Vector(), pat_vector, start_index);
+    return StringSearch(seq_sub->ToUC16Vector(), pat_vector, start_index);
   }
-  Vector<const uc16> pat_vector = pat->ToUC16Vector();
-  if (sub->IsAsciiRepresentation()) {
-    return StringSearch(sub->ToAsciiVector(), pat_vector, start_index);
+  Vector<const uc16> pat_vector = seq_pat->ToUC16Vector();
+  if (seq_sub->IsAsciiRepresentation()) {
+    return StringSearch(seq_sub->ToAsciiVector(), pat_vector, start_index);
   }
-  return StringSearch(sub->ToUC16Vector(), pat_vector, start_index);
+  return StringSearch(seq_sub->ToUC16Vector(), pat_vector, start_index);
 }
 
 
@@ -4946,16 +5106,6 @@ static Object* ConvertCaseHelper(String* s,
 }
 
 
-static inline SeqAsciiString* TryGetSeqAsciiString(String* s) {
-  if (!s->IsFlat() || !s->IsAsciiRepresentation()) return NULL;
-  if (s->IsConsString()) {
-    ASSERT(ConsString::cast(s)->second()->length() == 0);
-    return SeqAsciiString::cast(ConsString::cast(s)->first());
-  }
-  return SeqAsciiString::cast(s);
-}
-
-
 namespace {
 
 struct ToLowerTraits {
@@ -5002,7 +5152,7 @@ static Object* ConvertCase(
     unibrow::Mapping<typename ConvertTraits::UnibrowConverter, 128>* mapping) {
   NoHandleAllocation ha;
   CONVERT_CHECKED(String, s, args[0]);
-  s->TryFlatten();
+  s = s->TryFlattenGetString();
 
   const int length = s->length();
   // Assume that the string is not empty; we need this assumption later
@@ -5014,13 +5164,12 @@ static Object* ConvertCase(
   // character is also ascii.  This is currently the case, but it
   // might break in the future if we implement more context and locale
   // dependent upper/lower conversions.
-  SeqAsciiString* seq_ascii = TryGetSeqAsciiString(s);
-  if (seq_ascii != NULL) {
+  if (s->IsSeqAsciiString()) {
     Object* o = Heap::AllocateRawAsciiString(length);
     if (o->IsFailure()) return o;
     SeqAsciiString* result = SeqAsciiString::cast(o);
     bool has_changed_character = ConvertTraits::ConvertAscii(
-        result->GetChars(), seq_ascii->GetChars(), length);
+        result->GetChars(), SeqAsciiString::cast(s)->GetChars(), length);
     return has_changed_character ? result : s;
   }
 
@@ -5357,9 +5506,6 @@ static Object* Runtime_NumberToInteger(Arguments args) {
 }
 
 
-
-
-
 static Object* Runtime_NumberToIntegerMapMinusZero(Arguments args) {
   NoHandleAllocation ha;
   ASSERT(args.length() == 1);
@@ -5429,7 +5575,7 @@ static Object* Runtime_NumberAdd(Arguments args) {
 
   CONVERT_DOUBLE_CHECKED(x, args[0]);
   CONVERT_DOUBLE_CHECKED(y, args[1]);
-  return Heap::AllocateHeapNumber(x + y);
+  return Heap::NumberFromDouble(x + y);
 }
 
 
@@ -5439,7 +5585,7 @@ static Object* Runtime_NumberSub(Arguments args) {
 
   CONVERT_DOUBLE_CHECKED(x, args[0]);
   CONVERT_DOUBLE_CHECKED(y, args[1]);
-  return Heap::AllocateHeapNumber(x - y);
+  return Heap::NumberFromDouble(x - y);
 }
 
 
@@ -5449,7 +5595,7 @@ static Object* Runtime_NumberMul(Arguments args) {
 
   CONVERT_DOUBLE_CHECKED(x, args[0]);
   CONVERT_DOUBLE_CHECKED(y, args[1]);
-  return Heap::AllocateHeapNumber(x * y);
+  return Heap::NumberFromDouble(x * y);
 }
 
 
@@ -5458,7 +5604,7 @@ static Object* Runtime_NumberUnaryMinus(Arguments args) {
   ASSERT(args.length() == 1);
 
   CONVERT_DOUBLE_CHECKED(x, args[0]);
-  return Heap::AllocateHeapNumber(-x);
+  return Heap::NumberFromDouble(-x);
 }
 
 
@@ -5564,7 +5710,7 @@ static Object* Runtime_StringBuilderConcat(Arguments args) {
     if (first->IsString()) return first;
   }
 
-  bool ascii = special->IsAsciiRepresentation();
+  bool ascii = special->HasOnlyAsciiChars();
   int position = 0;
   for (int i = 0; i < array_length; i++) {
     int increment = 0;
@@ -5605,7 +5751,7 @@ static Object* Runtime_StringBuilderConcat(Arguments args) {
       String* element = String::cast(elt);
       int element_length = element->length();
       increment = element_length;
-      if (ascii && !element->IsAsciiRepresentation()) {
+      if (ascii && !element->HasOnlyAsciiChars()) {
         ascii = false;
       }
     } else {
@@ -6060,7 +6206,7 @@ static Object* Runtime_Math_pow(Arguments args) {
   // custom powi() function than the generic pow().
   if (args[1]->IsSmi()) {
     int y = Smi::cast(args[1])->value();
-    return Heap::AllocateHeapNumber(powi(x, y));
+    return Heap::NumberFromDouble(powi(x, y));
   }
 
   CONVERT_DOUBLE_CHECKED(y, args[1]);
@@ -7460,7 +7606,7 @@ class ArrayConcatVisitor {
   uint32_t index_limit_;
   // Index after last seen index. Always less than or equal to index_limit_.
   uint32_t index_offset_;
-  bool fast_elements_;
+  const bool fast_elements_;
 };
 
 
@@ -7777,13 +7923,14 @@ static Object* Runtime_ArrayConcat(Arguments args) {
     // The backing storage array must have non-existing elements to
     // preserve holes across concat operations.
     storage = Factory::NewFixedArrayWithHoles(result_length);
-
+    result->set_map(*Factory::GetFastElementsMap(Handle<Map>(result->map())));
   } else {
     // TODO(126): move 25% pre-allocation logic into Dictionary::Allocate
     uint32_t at_least_space_for = estimate_nof_elements +
                                   (estimate_nof_elements >> 2);
     storage = Handle<FixedArray>::cast(
                   Factory::NewNumberDictionary(at_least_space_for));
+    result->set_map(*Factory::GetSlowElementsMap(Handle<Map>(result->map())));
   }
 
   Handle<Object> len = Factory::NewNumber(static_cast<double>(result_length));
@@ -7833,9 +7980,19 @@ static Object* Runtime_MoveArrayContents(Arguments args) {
   ASSERT(args.length() == 2);
   CONVERT_CHECKED(JSArray, from, args[0]);
   CONVERT_CHECKED(JSArray, to, args[1]);
-  to->SetContent(FixedArray::cast(from->elements()));
+  HeapObject* new_elements = from->elements();
+  Object* new_map;
+  if (new_elements->map() == Heap::fixed_array_map()) {
+    new_map = to->map()->GetFastElementsMap();
+  } else {
+    new_map = to->map()->GetSlowElementsMap();
+  }
+  if (new_map->IsFailure()) return new_map;
+  to->set_map(Map::cast(new_map));
+  to->set_elements(new_elements);
   to->set_length(from->length());
-  from->SetContent(Heap::empty_fixed_array());
+  Object* obj = from->ResetElements();
+  if (obj->IsFailure()) return obj;
   from->set_length(Smi::FromInt(0));
   return to;
 }
@@ -9061,9 +9218,9 @@ static Object* Runtime_SetFunctionBreakPoint(Arguments args) {
   Handle<Object> break_point_object_arg = args.at<Object>(2);
 
   // Set break point.
-  Debug::SetBreakPoint(shared, source_position, break_point_object_arg);
+  Debug::SetBreakPoint(shared, break_point_object_arg, &source_position);
 
-  return Heap::undefined_value();
+  return Smi::FromInt(source_position);
 }
 
 
@@ -9081,8 +9238,6 @@ Object* Runtime::FindSharedFunctionInfoInScript(Handle<Script> script,
   // The current candidate for the source position:
   int target_start_position = RelocInfo::kNoPosition;
   Handle<SharedFunctionInfo> target;
-  // The current candidate for the last function in script:
-  Handle<SharedFunctionInfo> last;
   while (!done) {
     HeapIterator iterator;
     for (HeapObject* obj = iterator.next();
@@ -9123,25 +9278,12 @@ Object* Runtime::FindSharedFunctionInfoInScript(Handle<Script> script,
               }
             }
           }
-
-          // Keep track of the last function in the script.
-          if (last.is_null() ||
-              shared->end_position() > last->start_position()) {
-            last = shared;
-          }
         }
       }
     }
 
-    // Make sure some candidate is selected.
     if (target.is_null()) {
-      if (!last.is_null()) {
-        // Position after the last function - use last.
-        target = last;
-      } else {
-        // Unable to find function - possibly script without any function.
-        return Heap::undefined_value();
-      }
+      return Heap::undefined_value();
     }
 
     // If the candidate found is compiled we are done. NOTE: when lazy
@@ -9159,8 +9301,9 @@ Object* Runtime::FindSharedFunctionInfoInScript(Handle<Script> script,
 }
 
 
-// Change the state of a break point in a script. NOTE: Regarding performance
-// see the NOTE for GetScriptFromScriptData.
+// Changes the state of a break point in a script and returns source position
+// where break point was set. NOTE: Regarding performance see the NOTE for
+// GetScriptFromScriptData.
 // args[0]: script to set break point in
 // args[1]: number: break source position (within the script source)
 // args[2]: number: break point object
@@ -9188,7 +9331,9 @@ static Object* Runtime_SetScriptBreakPoint(Arguments args) {
     } else {
       position = source_position - shared->start_position();
     }
-    Debug::SetBreakPoint(shared, position, break_point_object_arg);
+    Debug::SetBreakPoint(shared, break_point_object_arg, &position);
+    position += shared->start_position();
+    return Smi::FromInt(position);
   }
   return  Heap::undefined_value();
 }
