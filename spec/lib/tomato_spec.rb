@@ -79,7 +79,7 @@ describe Tomato do
     code = "(new Date(#{time_in_millis}));"
     (subject.run(code).to_f * 1000.0).to_i.should == time_in_millis
   end
-  
+
   it "should handle 64 bit integers" do
     subject.run("(9223372036854775806);").should == 9223372036854775806
 #    /* TODO FIXME: There's no way to know if we're facing a Uint64. It works as a Float but user may not expect a Float... */

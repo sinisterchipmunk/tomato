@@ -1,33 +1,27 @@
 #include "tomato.h"
 
-Local<Object> js_error_from(VALUE ruby_error)
+VALUE WRAP_RB(VALUE (*meth)(VALUE), VALUE args)
 {
-  VALUE message = rb_funcall(ruby_error, rb_intern("to_s"), 0);
-  Local<Object> js_error = js_error_new(StringValuePtr(message));
-  js_error->Set(String::New("_is_ruby_error"), Boolean::New(true), DontEnum);
-  return js_error;
+  int error;
+  VALUE result = rb_protect(meth, args, &error);
+  if (error)
+    throw result;
+  return result;
 }
 
-Local<Object> js_error_new(const char *str)
-{
-  Local<Object> js_error = Local<Object>::Cast(Exception::Error(String::New(str)));
-  return js_error;  
-}
-
-/* The following was adapted from samples/shell.cc in v8 project. */
-void raise_error(TryCatch *try_catch)
+void throw_error(TryCatch *try_catch)
 {
   HandleScope handle_scope;
   String::Utf8Value exception(try_catch->Exception());
   Handle<Message> message = try_catch->Message();
-  
+
   /* check for Ruby error; if it's an error, reraise $!. TODO: See $! can ever be a different error... */
   Handle<Value> is_ruby_error = Local<Object>::Cast(try_catch->Exception())->Get(String::New("_is_ruby_error"));
   if (is_ruby_error->IsBoolean() && is_ruby_error->IsTrue())
   {
     throw rb_gv_get("$!");
   }
-  
+
   std::string errmsg;
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
@@ -43,7 +37,7 @@ void raise_error(TryCatch *try_catch)
     errmsg += linenum;
     errmsg += ToCString(exception);
     errmsg += "\n";
-    
+
     // Print line of source code.
     String::Utf8Value sourceline(message->GetSourceLine());
     errmsg += ToCString(sourceline);

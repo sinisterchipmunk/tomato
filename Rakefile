@@ -1,6 +1,10 @@
 require 'rubygems'
 require 'rake'
-require 'spec/rake/spectask'
+begin
+  require 'spec/rake/spectask'
+rescue LoadError
+  raise "Need RSpec 1.3"
+end
 
 begin
   require 'jeweler'

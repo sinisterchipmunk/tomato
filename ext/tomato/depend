@@ -1,10 +1,5 @@
-binding_classes.o: binding_classes.cpp tomato.h bindings.h
-binding_methods.o: binding_methods.cpp tomato.h bindings.h
-conversions_to_js.o: conversions_to_js.cpp tomato.h
-conversions_to_rb.o: conversions_to_rb.cpp tomato.h
-errors.o: errors.cpp tomato.h
-object_chain.o: object_chain.cpp tomato.h
-references.o: references.cpp tomato.h
-tomato.o: tomato.cpp tomato.h
-v8.o: v8.cpp tomato.h
-value_wrapper.o: value_wrapper.cpp tomato.h
+debug.o: debug.cpp tomato.h config.h
+errors.o: errors.cpp tomato.h config.h
+tomato.o: tomato.cpp tomato.h config.h
+v8.o: v8.cpp tomato.h config.h
+wrappers.o: wrappers.cpp tomato.h config.h

@@ -25,3 +25,5 @@ ext/tomato/external/build
 *.log
 *.bundle
 *.so
+safekeeping
+ext/tomato/external/build
