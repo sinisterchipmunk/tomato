@@ -1,5 +1,6 @@
 #include "tomato.h"
 
+/* class JavascriptValue */
 Handle<Value> JavascriptValue::toJSON(Handle<Value> json)
 {
   /* Call Javascript's JSON.stringify(object) method. If that can't be done for any reason, return an error. */
@@ -70,3 +71,6 @@ VALUE JavascriptValue::toRubyArray()
   }
   return rbarr;
 }
+
+
+/* class RubyValue */

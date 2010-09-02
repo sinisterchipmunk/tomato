@@ -35,6 +35,28 @@ using namespace v8;
 extern VALUE WRAP_RB(VALUE (*meth)(VALUE), VALUE args);
 extern void throw_error(TryCatch *try_catch);
 
+/* v8.cpp */
+class TomatoContext
+{
+  private:
+    VALUE rb_instance;
+    Persistent<Context> js_context;
+
+    VALUE compile_and_run(Handle<String> source, Handle<Value> name);
+
+  public:
+    TomatoContext(VALUE klass);
+    ~TomatoContext();
+    Persistent<Context> context() { return js_context; }
+    VALUE instance() { return rb_instance; }
+
+    VALUE execute(const char *javascript, const char *filename);
+};
+
+extern void Init_v8(void);
+
+extern VALUE cTomatoContext;
+
 /* tomato.cpp */
 class Tomato
 {
@@ -47,49 +69,52 @@ class Tomato
     ~Tomato();
     void rb_gc_mark();
     VALUE instance() { return this->rb_instance; }
+    TomatoContext *context();
 };
 
 extern "C" void Init_tomato(void);
 extern VALUE cTomato;
 extern VALUE cTomatoError;
 
-/* v8.cpp */
-class TomatoV8
-{
-  private:
-    VALUE rb_instance;
-    Persistent<Context> js_context;
-
-    VALUE compile_and_run(Handle<String> source, Handle<Value> name);
-
-  public:
-    TomatoV8(VALUE klass);
-    ~TomatoV8();
-    Persistent<Context> context() { return js_context; }
-    VALUE instance() { return rb_instance; }
-
-    VALUE execute(const char *javascript, const char *filename);
-};
-
-extern void Init_v8(void);
-
-extern VALUE cV8;
-
 /* in wrappers.cpp */
+/*
+  Contains a Javascript value which can then be converted to a corresponding Ruby type.
+  If the value itself wraps a Ruby object, the original object is returned. Otherwise,
+  a new instance of the closest matching Ruby type will be returned.
+  
+  For example, if the value is the number 5, then toRuby() will return the Fixnum 5.
+  If the value is wrapped around a Ruby VALUE, then the VALUE itself will be returned.
+*/
 class JavascriptValue
 {
   private:
     Handle<Value> value;
-
-  public:
-    JavascriptValue(Handle<Value> value) { this->value = value; }
-    Handle<Value> toJSON(Handle<Value> json);
-    VALUE toRuby();
     VALUE toRubyString();
     VALUE toRubyNumber();
     VALUE toRubyBoolean();
     VALUE toRubyDate();
     VALUE toRubyArray();
+
+  public:
+    JavascriptValue(Handle<Value> value) { this->value = value; }
+    Handle<Value> toJSON(Handle<Value> json);
+    VALUE toRuby();
+};
+
+/*
+  Contains a Ruby VALUE which can then be converted to a corresponding Javascript type.
+  If the value itself wraps a Javascript object, the original object is returned. Otherwise,
+  a new instance of the closest matching Javascript type will be returned.
+*/
+class RubyValue
+{
+  private:
+    VALUE value;
+    
+  public:
+    RubyValue(VALUE value) { this->value = value; }
+    void mark(void);
+    Handle<Value> toJavascript();
 };
 
 /* debug.cpp */
