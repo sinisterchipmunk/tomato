@@ -9,7 +9,8 @@ void Init_debug(void)
 void trace(VALUE string)
 {
 #ifdef DEBUG
-  trace(StringValuePtr(string));
+  VALUE inspection = rb_funcall(string, rb_intern("inspect"), 0);
+  trace(StringValuePtr(inspection));
 #endif
 }
 

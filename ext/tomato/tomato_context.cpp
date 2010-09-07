@@ -1,28 +1,36 @@
 #include "tomato.h"
 
+RB_DEFINE_ALLOC_FUNC(TomatoContext);
+
 static VALUE fContext_run(int argc, VALUE *argv, VALUE self);
 static VALUE fContext_version(VALUE self);
 static void fContext_mark(TomatoContext *v8);
 static void fContext_free(TomatoContext *v8);
-static VALUE fContext_allocate(VALUE klass);
 static v8::Handle<v8::Value> debug(const Arguments &args);
 
 VALUE cTomatoContext;
 
-TomatoContext::TomatoContext(VALUE klass)
+TomatoContext::TomatoContext()
 {
-  trace("Allocate Tomato::Context.new");
-  this->rb_instance = Data_Wrap_Struct(klass, fContext_mark, fContext_free, this);
+  trace("Allocate Tomato::Context.new %x", this);
+  this->rb_instance = Data_Wrap_Struct(cTomatoContext, fContext_mark, fContext_free, this);
   HandleScope handle_scope;
   Handle<ObjectTemplate> global = ObjectTemplate::New();
   global->Set(String::New("debug"), FunctionTemplate::New(debug));
   this->js_context = Context::New(NULL, global);
-  trace("  (finished allocating Tomato::V8)");
+  trace("  - finished allocating Tomato::Context");
 }
 
 TomatoContext::~TomatoContext()
 {
+  trace("destroy TomatoContext %x", this);
   this->js_context.Dispose();
+}
+
+Handle<Object> TomatoContext::global()
+{
+  trace("TomatoContext::global()");
+  return this->js_context->Global();
 }
 
 VALUE TomatoContext::execute(const char *javascript, const char *filename)
@@ -78,18 +86,11 @@ VALUE TomatoContext::compile_and_run(Handle<String> source, Handle<Value> name)
 
 void Init_v8(void)
 {
-  cTomatoContext = rb_define_class_under(cTomato, "V8", rb_cObject);
+  cTomatoContext = rb_define_class_under(cTomato, "Context", rb_cObject);
 
   rb_define_method(cTomatoContext, "run", (VALUE(*)(...))&fContext_run, -1);
   rb_define_module_function(cTomatoContext, "version", (VALUE(*)(...))&fContext_version, 0);
-  rb_define_alloc_func(cTomatoContext, (VALUE(*)(VALUE))&fContext_allocate);
-}
-
-static VALUE fContext_allocate(VALUE klass)
-{
-  TomatoContext *v8 = new TomatoContext(klass);
-
-  return v8->instance();
+  rb_define_alloc_func(cTomatoContext, (VALUE(*)(VALUE))&RB_ALLOC_FUNC(TomatoContext));
 }
 
 static void fContext_mark(TomatoContext *v8) {}
@@ -101,8 +102,7 @@ static void fContext_free(TomatoContext *v8)
 
 static VALUE fContext_run(int argc, VALUE *argv, VALUE self)
 {
-  TomatoContext *v8;
-  Data_Get_Struct(self, TomatoContext, v8);
+  RB_EXTRACT_STRUCT(self, TomatoContext, v8);
 
   if (argc == 0)
   {
@@ -135,7 +135,7 @@ static VALUE fContext_version(VALUE self)
 static v8::Handle<v8::Value> debug(const Arguments &args)
 {
   Handle<Value> arg;
-  TomatoContext *v8 = (TomatoContext *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato_v8")))->Value());
+  TomatoContext *v8 = (TomatoContext *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato_context")))->Value());
   Handle<Value> json = v8->context()->Global()->Get(String::New("JSON"));
   
   int len = args.Length();

@@ -64,7 +64,9 @@ namespace :make do
   task :build do
     ENV['FAST'] = '1'
     chdir(File.expand_path("../ext/tomato", __FILE__)) do
-      unless system("gcc -MM *.cpp > depend") && system("ruby extconf.rb") && system("make all")
+      unless  \
+              #system("gcc -MM *.cpp > depend") && 
+              system("ruby extconf.rb") && system("make all")
         raise "Build failed"
       end
     end

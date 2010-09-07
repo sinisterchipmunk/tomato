@@ -1,5 +1,0 @@
-debug.o: debug.cpp tomato.h config.h
-errors.o: errors.cpp tomato.h config.h
-tomato.o: tomato.cpp tomato.h config.h
-v8.o: v8.cpp tomato.h config.h
-wrappers.o: wrappers.cpp tomato.h config.h

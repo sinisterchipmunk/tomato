@@ -45,7 +45,7 @@ LIBRUBYARG_STATIC = -l$(RUBY_SO_NAME)
 
 RUBY_EXTCONF_H = 
 CFLAGS   =  -fno-common -arch i386 -arch x86_64 -g -Os -pipe -fno-common -DENABLE_DTRACE  -fno-common  -pipe -fno-common $(cflags) 
-INCFLAGS = -I. -I. -I/System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/universal-darwin10.0 -I. -I/Users/colin/projects/gems/tomato/ext/tomato/external/build/v8/include
+INCFLAGS = -I. -I. -I/System/Library/Frameworks/Ruby.framework/Versions/1.8/usr/lib/ruby/1.8/universal-darwin10.0 -I. -I/Users/colin/projects/gems/tomato/ext/tomato/external/build/v8/include -I./include
 DEFS     = 
 CPPFLAGS =   -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE   -Wall -g -rdynamic
 CXXFLAGS = $(CFLAGS) 
@@ -87,8 +87,8 @@ extout_prefix =
 target_prefix = 
 LOCAL_LIBS = 
 LIBS = $(LIBRUBYARG_SHARED) -lobjc -lpthread  -lpthread -ldl   -lv8
-SRCS = debug.cpp errors.cpp tomato.cpp v8.cpp wrappers.cpp
-OBJS = debug.o errors.o tomato.o v8.o wrappers.o
+SRCS = debug.cpp errors.cpp tomato.cpp tomato_context.cpp wrappers.cpp
+OBJS = debug.o errors.o tomato.o tomato_context.o wrappers.o
 TARGET = tomato
 DLLIB = $(TARGET).bundle
 EXTSTATIC = 
@@ -155,11 +155,6 @@ $(DLLIB): $(OBJS) Makefile
 
 
 ###
-debug.o: debug.cpp tomato.h config.h
-errors.o: errors.cpp tomato.h config.h
-tomato.o: tomato.cpp tomato.h config.h
-v8.o: v8.cpp tomato.h config.h
-wrappers.o: wrappers.cpp tomato.h config.h
 
 test: all
 	@echo Running specs...

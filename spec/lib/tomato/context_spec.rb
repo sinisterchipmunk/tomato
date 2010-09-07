@@ -1,8 +1,8 @@
 require 'spec_helper'
 
-describe Tomato::V8 do
-  it "should have the right V8 version" do
-    Tomato::V8.version.should == "2.2.23"
+describe Tomato::Context do
+  it "should have the right Context version" do
+    Tomato::Context.version.should == "2.2.23"
   end
   
   it "should raise ArgumentError given too few arguments" do

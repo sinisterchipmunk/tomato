@@ -27,3 +27,4 @@ ext/tomato/external/build
 *.so
 safekeeping
 ext/tomato/external/build
+depend

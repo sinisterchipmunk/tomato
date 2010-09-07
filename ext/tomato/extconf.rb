@@ -27,6 +27,7 @@ $CPPFLAGS += " -rdynamic" unless $CPPFLAGS.split.include? "-rdynamic"
 
 $DEFLIBPATH.unshift(BUILD)
 $LIBS << ' -lv8'
+find_header('dry.h', File.join(File.dirname(__FILE__), "include"))
 
 CONFIG['LDSHARED'] = '$(CXX) -shared' unless RUBY_PLATFORM =~ /darwin/
 
