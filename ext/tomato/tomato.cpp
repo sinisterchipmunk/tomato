@@ -11,9 +11,10 @@ VALUE cTomatoError;
 Tomato::Tomato()
 {
   trace("create Tomato<%x>", this);
-  this->rb_instance = Data_Wrap_Struct(cTomato, RB_MARK_FUNC(Tomato), RB_FREE_FUNC(Tomato), this);
-  this->rb_references = rb_hash_new();
-  rb_iv_set(this->rb_instance, "@context", rb_class_new_instance(0, 0, cTomatoContext));
+  INC_TRACE_DEPTH;
+    this->rb_instance = Data_Wrap_Struct(cTomato, RB_MARK_FUNC(Tomato), RB_FREE_FUNC(Tomato), this);
+    rb_iv_set(this->rb_instance, "@context", rb_class_new_instance(0, 0, cTomatoContext));
+  DEC_TRACE_DEPTH;
 }
 
 Tomato::~Tomato()
@@ -24,7 +25,7 @@ Tomato::~Tomato()
 void Tomato::rb_gc_mark()
 {
   ::rb_gc_mark(this->rb_instance);
-  ::rb_gc_mark(this->rb_references);
+  references.rb_gc_mark();
 }
 
 //void UnbindValue(Persistent<Value> bound_object, void*)
@@ -45,75 +46,42 @@ void Tomato::bind(VALUE object, const char *object_name)
     VALUE inspection = rb_funcall(object, rb_intern("inspect"), 0);
     trace("Tomato<%x>#bind: %s as %s", this, StringValuePtr(inspection), object_name);
   #endif
-  Context::Scope csx(this->context()->context());
-  Handle<Object> global = this->global();
-  RubyValue *value = new RubyValue();
-  value->set(object);
-  trace("  - adding Ruby reference to object");
-  add_reference(value->rb_wrapper());
-  
-  trace("  - setting bound object on global context");
-  global->Set(String::New(object_name), value->toJavascript());
-  
+  INC_TRACE_DEPTH;
+    Context::Scope csx(this->context()->context());
+    Handle<Object> global = this->global();
+    RubyValue *value = new RubyValue();
+    value->set(object);
+    
+    trace("- adding Ruby reference to object");
+    INC_TRACE_DEPTH;
+      references.add(value->rb_wrapper());
+    DEC_TRACE_DEPTH;
+    
+    trace("- setting bound object on global context");
+    global->Set(String::New(object_name), value->toJavascript());
+  DEC_TRACE_DEPTH;
 }
-
-VALUE Tomato::reference(VALUE obj)
-{
-  VALUE object_id = rb_funcall(obj, rb_intern("object_id"), 0);
-  VALUE ary = rb_hash_aref(this->rb_references, INT2FIX(object_id));
-  if (NIL_P(ary))
-  { /* if entry doesn't exist, create it */
-    ary = rb_ary_new2(2);
-    rb_hash_aset(this->rb_references, object_id, ary);
-    rb_ary_store(ary, 0, INT2FIX(0));
-    rb_ary_store(ary, 1, obj);
-    #if DEBUG == 1
-      VALUE inspection = rb_funcall(ary, rb_intern("inspect"), 0);
-      trace("Tomato<%x>#reference: creating entry %d => %s", this, NUM2LONG(object_id), StringValuePtr(inspection));
-    #endif
-  }
-  return ary;
-}
-
-void Tomato::add_reference(VALUE obj)
-{
-  VALUE ref = this->reference(obj);
-  int index = FIX2INT(rb_ary_entry(ref, 0)) + 1;
-  rb_ary_store(ref, 0, INT2FIX(index));
-  #if DEBUG == 1
-    VALUE inspection = rb_funcall(ref, rb_intern("inspect"), 0);
-    trace("Tomato<%x>#add_reference - %s", this, StringValuePtr(inspection));
-  #endif
-}
-
-void Tomato::remove_reference(VALUE obj)
-{
-//  VALUE ref = this->reference(obj);
-//  if (rb_ary_entry(obj, 0) == 0)
-//  {
-//    rb_raise(rb_e)
-//  }
-}
-
 
 extern "C"
 void Init_tomato(void)
 {
   Init_debug();
   trace("Tomato system initialization has started.");
+  INC_TRACE_DEPTH;
 
-  cTomato = rb_define_class("Tomato", rb_cObject);
-  cTomatoError = rb_define_class_under(cTomato, "Error", rb_eRuntimeError);
-
-  rb_define_alloc_func(cTomato, (VALUE(*)(VALUE))&RB_ALLOC_FUNC(Tomato));
+    cTomato = rb_define_class("Tomato", rb_cObject);
+    cTomatoError = rb_define_class_under(cTomato, "Error", rb_eRuntimeError);
   
-  rb_define_method(cTomato, "run", (VALUE(*)(...))&fTomato_run, -1);
-  rb_define_method(cTomato, "bind_object", (VALUE(*)(...))&fTomato_bind_object, -1);
-  
-  Init_v8();
-  Init_wrappers();
-  
-  trace("Tomato system initialization has been completed.");
+    rb_define_alloc_func(cTomato, (VALUE(*)(VALUE))&RB_ALLOC_FUNC(Tomato));
+    
+    rb_define_method(cTomato, "run", (VALUE(*)(...))&fTomato_run, -1);
+    rb_define_method(cTomato, "bind_object", (VALUE(*)(...))&fTomato_bind_object, -1);
+    
+    Init_v8();
+    Init_wrappers();
+    
+    trace("- completed.");
+  DEC_TRACE_DEPTH;
 }
 
 TomatoContext *Tomato::context()
@@ -122,7 +90,9 @@ TomatoContext *Tomato::context()
     VALUE instance_str = rb_funcall(rb_iv_get(this->rb_instance, "@context"), rb_intern("inspect"), 0);
     trace("Tomato<%x>::context on %s", this, StringValuePtr(instance_str));
   #endif
-  RB_EXTRACT_STRUCT(rb_iv_get(this->rb_instance, "@context"), TomatoContext, context);
+  INC_TRACE_DEPTH;
+    RB_EXTRACT_STRUCT(rb_iv_get(this->rb_instance, "@context"), TomatoContext, context);
+  DEC_TRACE_DEPTH;
   return context;
 }
 

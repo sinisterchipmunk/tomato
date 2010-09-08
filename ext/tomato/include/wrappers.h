@@ -1,6 +1,8 @@
 #ifndef WRAPPERS_H
 #define WRAPPERS_H
 
+#include "reference_manager.h"
+
 /* in tomato.cpp */
 //extern void UnbindValue(Persistent<Value> bound_object, void*);
 
@@ -39,6 +41,7 @@ class JavascriptValue
 class RubyValue
 {
   private:
+    Handle<ObjectTemplate> object_template;
     VALUE rb_value;
     
     /* rb_self is an instance of the Ruby class Tomato::RubyValue. rb_self is the object
@@ -50,17 +53,32 @@ class RubyValue
     
     Persistent<Object> js_value;
     
+    /* To keep track of references that have to be recursively mirrored, as with Arrays */
+    ReferenceManager references;
+    
+    Handle<Value> named_get(Local<String> name, const AccessorInfo &info);
+    Handle<Value> named_set(Local<String> name, Handle<Value> new_value, const AccessorInfo &info);
+    Handle<Value> indexed_get(uint32_t index, const AccessorInfo &info);
+    Handle<Value> indexed_set(uint32_t index, Local<Value> new_value, const AccessorInfo &info);
+    
+    void init(void);
+    
+  protected:
+    Handle<Object> toJavascriptObject();
+    Handle<Array> toJavascriptPrimitiveArray();
+    
   public:
-    RubyValue();
+    RubyValue() { init(); }
+    RubyValue(VALUE object) { init(); set(object); }
     ~RubyValue();
     void set(VALUE object);
-    void rb_gc_mark(void) { ::rb_gc_mark(this->rb_value); }
+    void rb_gc_mark(void) { ::rb_gc_mark(this->rb_value); references.rb_gc_mark(); }
     VALUE value() { return this->rb_value; }
     char *inspect() { VALUE inspection = rb_funcall(this->rb_value, rb_intern("inspect"), 0); return StringValuePtr(inspection); }
-    
-    Handle<Value> toJavascript() { return this->js_value; }
-    Handle<Value> toJavascriptPrimitive();
     VALUE rb_wrapper() { return this->rb_self; }
+    
+    Handle<Value> toJavascriptPrimitive();
+    Handle<Value> toJavascript();
 };
 
 #endif//WRAPPERS_H

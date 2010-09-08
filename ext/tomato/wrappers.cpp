@@ -3,6 +3,7 @@
 static VALUE cRubyValue = Qnil;
 
 static VALUE fRubyValue_inspect(VALUE self);
+static Handle<Value> bound_valueOf(const Arguments &args);
 
 static RubyValue *RB_ALLOC_FUNC(RubyValue)(VALUE klass)
 { /* klass is the same as class_name, so no need to use it directly. */
@@ -106,9 +107,30 @@ VALUE JavascriptValue::toRubyArray()
 
 
 /* class RubyValue */
-RubyValue::RubyValue()
+void RubyValue::init()
 {
   this->rb_self = Data_Wrap_Struct(cRubyValue, RB_MARK_FUNC(RubyValue), RB_FREE_FUNC(RubyValue), this);
+
+
+  trace("creating RubyValue object template");
+  Local<FunctionTemplate> functemp = FunctionTemplate::New();
+  
+  
+  //this->object_template = functemp->PrototypeTemplate();
+  
+  INC_TRACE_DEPTH;
+    trace("- adding named property interceptor");
+    //this->object_template->SetNamedPropertyHandler(named_get, named_set);
+    
+    trace("- adding indexed property interceptor");
+    //this->object_template->SetIndexedPropertyHandler(this->indexed_get, this->indexed_set);
+    
+    trace("- adding valueOf() function");
+    this->object_template->Set(String::New("valueOf"), FunctionTemplate::New(bound_valueOf));
+
+    //trace("- adding proxy functions");
+    //this->js_value->
+  DEC_TRACE_DEPTH;
 }
 
 RubyValue::~RubyValue()
@@ -119,6 +141,7 @@ RubyValue::~RubyValue()
 
 static Handle<Value> bound_valueOf(const Arguments &args)
 {
+  printf("1\n");
   Local<Object> self = args.Holder();
   trace("bound_object#valueOf()");
   Handle<Value> value = self->GetHiddenValue(String::New("ruby_value"));
@@ -132,7 +155,6 @@ static Handle<Value> bound_valueOf(const Arguments &args)
   }
   else
     return ThrowException(String::New("(Tomato) BUG: Bound value is not an External!"));
-  return Null();
 }
 
 void RubyValue::set(VALUE value)
@@ -142,26 +164,131 @@ void RubyValue::set(VALUE value)
     trace("creating RubyValue<%x> from %s", this, StringValuePtr(inspection));
   #endif
   this->rb_value = value;
-  trace("  - creating bound object");
-  Handle<Object> bound_object = Object::New();
   
-  trace("  - adding valueOf() function");
-  Local<Function> func = FunctionTemplate::New(bound_valueOf)->GetFunction();
-  func->SetName(String::New("valueOf"));
-  bound_object->Set(String::New("valueOf"), func);
-  
-  trace("  - making bound object persistent");
-  this->js_value = Persistent<Object>::New(bound_object);
-  trace("  - setting ruby_value on bound object");
-  this->js_value->SetHiddenValue(String::New("ruby_value"), External::New(this));
-//  trace("  - making bound object weak");
-//  this->js_value.MakeWeak(NULL, &UnbindValue);
+  INC_TRACE_DEPTH;
+    trace("creating bound object");
+    Handle<Object> bound_object = this->object_template->NewInstance();
+    
+    trace("making bound object persistent");
+    this->js_value = Persistent<Object>::New(bound_object);
+    
+    trace("setting ruby_value on bound object");
+    this->js_value->SetHiddenValue(String::New("ruby_value"), External::New(this));
+  DEC_TRACE_DEPTH;
 }
 
+Handle<Value> RubyValue::named_get(Local<String> name, const AccessorInfo &info)
+{
+  return Null();
+}
+
+Handle<Value> RubyValue::named_set(Local<String> name, Handle<Value> new_value, const AccessorInfo &info)
+{
+  return Null();
+}
+
+Handle<Value> RubyValue::indexed_get(uint32_t index, const AccessorInfo &info)
+{
+  return Null();
+}
+
+Handle<Value> RubyValue::indexed_set(uint32_t index, Local<Value> new_value, const AccessorInfo &info)
+{
+  return Null();
+}
+
+
+Handle<Value> RubyValue::toJavascript()
+{
+  if (NIL_P(rb_value)) return Null();
+  
+//  switch(TYPE(rb_value))
+//  {
+//    case T_ARRAY:  return toJavascriptArray();
+//  };
+  return this->js_value;
+}
+
+Handle<Array> RubyValue::toJavascriptPrimitiveArray()
+{
+  trace("RubyValue<%x>::toJavascriptPrimitiveArray()", this);
+  int i, len = RARRAY_LEN(rb_value);
+  VALUE element;
+  INC_TRACE_DEPTH;
+    trace("- initializing array with %d elements", len);
+    Handle<Array> array = Array::New(len);
+  
+    INC_TRACE_DEPTH;
+      for (i = 0; i < RARRAY_LEN(rb_value); i++)
+      {
+        element = *(RARRAY_PTR(rb_value)+i);
+        
+        #if DEBUG == 1   
+          VALUE inspection = rb_funcall(element, rb_intern("inspect"), 0);
+          trace("setting element %d to %s", i, StringValuePtr(inspection));
+        #endif
+        
+        INC_TRACE_DEPTH;
+          array->Set(i, Number::New(i));
+          //RubyValue value(element);
+          //array->Set(i, value.toJavascriptPrimitive());
+        DEC_TRACE_DEPTH;
+      }
+    DEC_TRACE_DEPTH;
+
+  #if DEBUG == 1
+    trace("array is built, reverse check to follow:");
+    INC_TRACE_DEPTH;
+      JavascriptValue js(array);
+      trace("inspecting value...");
+      VALUE v = rb_funcall(js.toRuby(), rb_intern("inspect"), 0);
+      trace("result: %s", StringValuePtr(v));
+    DEC_TRACE_DEPTH;
+  #endif
+
+  DEC_TRACE_DEPTH;
+  return array;
+}
+    
 Handle<Value> RubyValue::toJavascriptPrimitive()
 {
-  if (NIL_P(rb_value))      return Null();
-  if (FIXNUM_P(rb_value))   return Number::New(FIX2INT(rb_value));
+  /* can't return +null+ here; see #toJavascript() instead */
+
+  #if DEBUG == 1
+    VALUE inspection = rb_funcall(rb_value, rb_intern("inspect"), 0);
+    trace("RubyValue<%x>#toJavascriptPrimitive() <%s>", this, StringValuePtr(inspection));
+  #endif
+  
+  if (FIXNUM_P(rb_value))
+    return Number::New(FIX2INT(rb_value));
+    
+  switch(TYPE(rb_value))
+  {
+    case T_FLOAT:  return Number::New(NUM2DBL(rb_value));
+    case T_STRING: return String::New(StringValuePtr(rb_value));
+    case T_REGEXP: return ThrowException(String::New("(Tomato) Not Implemented: conversion from T_REGEXP to v8::RegExp is not possible at this time"));
+    case T_ARRAY:  return toJavascriptPrimitiveArray();
+  };
+  /*
+	T_OBJECT	ordinary object
+	T_CLASS		class
+	T_MODULE	module
+	T_FLOAT		floating point number
+	T_STRING	string
+	T_REGEXP	regular expression
+	T_ARRAY		array
+	T_HASH		associative array
+	T_STRUCT	(Ruby) structure
+	T_BIGNUM	multi precision integer
+	T_FIXNUM	Fixnum(31bit or 63bit integer)
+	T_COMPLEX       complex number
+	T_RATIONAL      rational number
+	T_FILE		IO
+	T_TRUE		true
+	T_FALSE		false
+	T_DATA		data
+	T_SYMBOL        symbol
+  */
 //  if (value->IsString())    return toRubyString();
 //  if (value->IsNumber())    return toRubyNumber();
 //  if (value->IsFunction())  return toRubyString();

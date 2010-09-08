@@ -1,5 +1,7 @@
 #include "tomato.h"
 
+int TRACE_DEPTH = 0;
+
 void Init_debug(void)
 {
   if (LOG_FILE != 0)
@@ -18,16 +20,19 @@ void trace(const char *string, ...)
 {
 #ifdef DEBUG
   va_list argp;
+  int i;
 
   va_start(argp, string);
   if (LOG_FILE == 0)
   {
+    for (i = 0; i < TRACE_DEPTH*TRACE_INDENTATION; i++) fprintf(stderr, " ");
     vfprintf(stderr, string, argp);
     fprintf(stderr, "\n");
   }
   else
   {
     FILE *out = fopen(LOG_FILE, "a+");
+    for (i = 0; i < TRACE_DEPTH*TRACE_INDENTATION; i++) fprintf(out, " ");
     vfprintf(out, string, argp);
     fprintf(out, "\n");
     fclose(out);

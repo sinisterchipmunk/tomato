@@ -13,18 +13,22 @@ VALUE cTomatoContext;
 TomatoContext::TomatoContext()
 {
   trace("Allocate Tomato::Context.new %x", this);
-  this->rb_instance = Data_Wrap_Struct(cTomatoContext, fContext_mark, fContext_free, this);
-  HandleScope handle_scope;
-  Handle<ObjectTemplate> global = ObjectTemplate::New();
-  global->Set(String::New("debug"), FunctionTemplate::New(debug));
-  this->js_context = Context::New(NULL, global);
-  trace("  - finished allocating Tomato::Context");
+  INC_TRACE_DEPTH;
+    this->rb_instance = Data_Wrap_Struct(cTomatoContext, fContext_mark, fContext_free, this);
+    HandleScope handle_scope;
+    Handle<ObjectTemplate> global = ObjectTemplate::New();
+    global->Set(String::New("debug"), FunctionTemplate::New(debug));
+    this->js_context = Context::New(NULL, global);
+    trace("- finished allocating Tomato::Context");
+  DEC_TRACE_DEPTH;
 }
 
 TomatoContext::~TomatoContext()
 {
   trace("destroy TomatoContext %x", this);
-  this->js_context.Dispose();
+  INC_TRACE_DEPTH;
+    this->js_context.Dispose();
+  DEC_TRACE_DEPTH;
 }
 
 Handle<Object> TomatoContext::global()
@@ -135,8 +139,7 @@ static VALUE fContext_version(VALUE self)
 static v8::Handle<v8::Value> debug(const Arguments &args)
 {
   Handle<Value> arg;
-  TomatoContext *v8 = (TomatoContext *)(Handle<External>::Cast(args.Holder()->Get(String::New("_tomato_context")))->Value());
-  Handle<Value> json = v8->context()->Global()->Get(String::New("JSON"));
+  Handle<Value> json = args.Holder()->Get(String::New("JSON"));
   
   int len = args.Length();
   for (int i = 0; i < len; i++)

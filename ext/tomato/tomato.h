@@ -24,29 +24,19 @@ using namespace v8;
   #define DBL2NUM(n) rb_float_new(n)
 #endif
 
+#include "debug.h"
 #include "dry.h"
 #include "errors.h"
 #include "tomato_context.h"
-#include "debug.h"
 #include "wrappers.h"
+#include "reference_manager.h"
 
 /* tomato.cpp */
 class Tomato
 {
   private:
     VALUE rb_instance;
-    
-    // {object_id => reference(obj)}, e.g. {object_id => [1, obj]} 
-    VALUE rb_references;
-    
-    /* Returns the array used as a value in rb_references, or a new array if none exists.
-       The array contains [reference_count, obj] where reference_count is the number of open
-       references to obj. */
-    VALUE reference(VALUE obj);
-  
-  protected:
-    void add_reference(VALUE obj);
-    void remove_reference(VALUE obj);
+    ReferenceManager references;
 
   public:
     Tomato();
