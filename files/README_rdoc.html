@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>File: README.rdoc</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+  <meta http-equiv="Content-Script-Type" content="text/javascript" />
+  <link rel="stylesheet" href=".././rdoc-style.css" type="text/css" media="screen" />
+  <script type="text/javascript">
+  // <![CDATA[
+
+  function popupCode( url ) {
+    window.open(url, "Code", "resizable=yes,scrollbars=yes,toolbar=no,status=no,height=150,width=400")
+  }
+
+  function toggleCode( id ) {
+    if ( document.getElementById )
+      elem = document.getElementById( id );
+    else if ( document.all )
+      elem = eval( "document.all." + id );
+    else
+      return false;
+
+    elemStyle = elem.style;
+    
+    if ( elemStyle.display != "block" ) {
+      elemStyle.display = "block"
+    } else {
+      elemStyle.display = "none"
+    }
+
+    return true;
+  }
+  
+  // Make codeblocks hidden by default
+  document.writeln( "<style type=\"text/css\">div.method-source-code { display: none }</style>" )
+  
+  // ]]>
+  </script>
+
+</head>
+<body>
+
+
+
+  <div id="fileHeader">
+    <h1>README.rdoc</h1>
+    <table class="header-table">
+    <tr class="top-aligned-row">
+      <td><strong>Path:</strong></td>
+      <td>README.rdoc
+      </td>
+    </tr>
+    <tr class="top-aligned-row">
+      <td><strong>Last Update:</strong></td>
+      <td>Wed Dec 15 08:47:15 -0500 2010</td>
+    </tr>
+    </table>
+  </div>
+  <!-- banner header -->
+
+  <div id="bodyContent">
+
+
+
+  <div id="contextContent">
+
+    <div id="description">
+      <h1>tomato</h1>
+<p>
+Leverages Google&#8216;s V8 JavaScript library to interface Ruby code with
+JavaScript code.
+</p>
+<h2>IMPORTANT</h2>
+<p>
+I&#8216;ve left the version number in the 0.0.x range because it&#8216;s
+WAAAY too early for a proper release. This is some pretty cool code IMO,
+but keep in mind if you want to check it out that it&#8216;s still
+development code (not even pre-Alpha). I do hope to release it as a real
+gem after it&#8216;s reached a sufficient level of functionality.
+</p>
+<h2>Examples</h2>
+<h3>Instantiation</h3>
+<pre>
+  require 'tomato'
+  tomato = Tomato.new
+</pre>
+<h3>Running JavaScript code</h3>
+<p>
+When JS code is executed, it&#8216;ll do its thing internally and then
+return the result:
+</p>
+<pre>
+  tomato.run(&quot;(1+1);&quot;) # =&gt; 2
+</pre>
+<h4>Bindings</h4>
+<p>
+You can bind Ruby methods to JavaScript, as well. You can bind an instance
+method of <a href="../classes/Tomato.html">Tomato</a> like so:
+</p>
+<pre>
+  tomato.bind_method(:inspect)
+  tomato.run(&quot;inspect();&quot;)  #=&gt; &quot;#&lt;Tomato&gt;&quot;
+</pre>
+<p>
+Or, perhaps more usefully, you can bind an instance method of some other
+object:
+</p>
+<pre>
+  tomato.bind_method(:inspect, 5)
+  tomato.run(&quot;inspect();&quot;)  #=&gt; &quot;5&quot;
+</pre>
+<p>
+It&#8216;s also easy to bind methods to arbitrary JavaScript objects. If a
+JS object in the chain doesn&#8216;t exist, <a
+href="../classes/Tomato.html">Tomato</a> will silently generate it for you
+on-the-fly:
+</p>
+<pre>
+  def say(something)
+    puts something
+  end
+
+  tomato.bind_method(:say, self, :to =&gt; &quot;person.mouth&quot;)
+
+  # Tomato generated both the &quot;person&quot; and &quot;mouth&quot; objects for us:
+  tomato.run &quot;person.mouth.say('Hello there');&quot;
+
+  # Produces:
+  #
+  # Hello there
+  #  =&gt; nil
+
+  puts tomato.run(&quot;this&quot;)
+
+  # Produces:
+  #
+  # {&quot;person&quot;:{&quot;mouth&quot;:{}}}
+  #  =&gt; nil
+</pre>
+<p>
+In the spirit of true Ruby dynamicism, (is that a word?), you can feel free
+to re-bind new methods over old ones:
+</p>
+<pre>
+  tomato.bind_method(:say)
+  tomato.run(&quot;say('something');&quot;)
+  #=&gt; error! say is not an instance method of Tomato
+
+  tomato.bind_method(:say, self)
+  def say(something); puts something; end
+  tomato.run(&quot;say('something');&quot;)
+  #=&gt; something
+</pre>
+<p>
+You can also easily bind an entire object to JavaScript:
+</p>
+<pre>
+  # By default objects are mapped to 'ruby.[object_class_name]'
+  tomato.bind_object(Time.now)
+  tomato.run(&quot;ruby.time.to_s();&quot;)
+  #=&gt; &quot;2010-06-25 18:12:23 -0400&quot;
+
+  # Or give it an object name or chain of names:
+  tomato.bind_object(Time.now, &quot;time.current&quot;)
+  tomato.run(&quot;time.current.to_s();&quot;)
+  #=&gt; &quot;2010-06-25 18:12:23 -0400&quot;
+</pre>
+<p>
+Even better, you can also bind a whole class and instantiate it from within
+JavaScript. If you return the object to Ruby, it&#8216;ll be seamlessly
+converted into the corresponding Ruby object.
+</p>
+<pre>
+  class Person
+    def initialize(name)
+      @name = name
+    end
+    attr_accessor :name, :age
+  end
+
+  tomato.bind_object(Person, &quot;world.Person&quot;)
+  tomato.run &lt;&lt;-end_js
+    var colin = new world.Person(&quot;Colin&quot;);
+    colin.age = 25;
+    colin;
+  end_js
+
+  #=&gt; #&lt;Person:0x00000100dbbc50 @name=&quot;Colin&quot;, @age=25&gt;
+</pre>
+<h4>Error Handling</h4>
+<p>
+When JS code encounters an error of some kind, it&#8216;ll get raised in
+Ruby:
+</p>
+<pre>
+  tomato.run(&quot;throw 'error';&quot;)
+
+  # Produces:
+  #
+  # Tomato::Error: (dynamic):error
+  # throw 'error';
+  # ^
+  #
+  #     from (irb):3:in `run'
+  #         from (irb):3
+</pre>
+<p>
+You can also catch Ruby errors in JavaScript:
+</p>
+<pre>
+  tomato.bind_method(:raise_err, self)
+  def raise_err
+    raise ArgumentError, &quot;Not what I meant!&quot;
+  end
+  tomato.run(&quot;try { raise_err(); } catch(e) {}&quot;);
+
+  # Produces:
+  #
+  # Nothing, because the error was caught.
+</pre>
+<p>
+Or let them bubble up to Ruby:
+</p>
+<pre>
+  tomato.bind_method(:raise_err, self)
+  def raise_err
+    raise ArgumentError, &quot;Not what I meant!&quot;
+  end
+  begin
+    tomato.run(&quot;raise_err();&quot;);
+  rescue ArgumentError =&gt; err
+    puts &quot;Error: #{err.message}&quot;
+  end
+
+  # Produces:
+  #
+  # Error: Not what I meant!
+  #  =&gt; nil
+</pre>
+<h3>Object Types</h3>
+<p>
+Some objects in Ruby don&#8216;t exist in JS. So far the ones I&#8216;ve
+implemented are Hashes and Symbols.
+</p>
+<h4>Symbols</h4>
+<p>
+A Symbol is converted to an object in JS with a &quot;symbol&quot;
+attribute and a &quot;toString()&quot; method. That same object, if
+returned to Ruby, is converted back to a Symbol. Examples:
+</p>
+<pre>
+  def fetch_a_symbol
+    :a_symbol
+  end
+
+  t = Tomato.new
+  t.bind_method(:fetch_a_symbol, self)
+  t.run(&quot;fetch_a_symbol()&quot;)            #=&gt; :a_symbol
+  t.run(&quot;fetch_a_symbol().symbol&quot;)     #=&gt; &quot;a_symbol&quot;
+  t.run(&quot;fetch_a_symbol().toString()&quot;) #=&gt; &quot;a_symbol&quot;
+</pre>
+<h4>Hashes</h4>
+<p>
+A Hash is converted to an object of some form or another. It&#8216;s not an
+Array. I haven&#8216;t added much to the JS side of this object yet, so I
+don&#8216;t know if it&#8216;s even usable in JS. But it does, at least,
+return to Ruby as a Hash. So you can have a method that returns a Hash,
+call the method from JS, return that object to Ruby, and get the hash.
+Dunno if that&#8216;s useful, but it&#8216;s an implementation detail that
+had to be looked at regardless. Hashes still have a lot of development
+ahead of them.
+</p>
+<h2>Requirements</h2>
+<pre>
+ * Ruby. Tested:
+   * 1.8.7 p174 - pass
+   * 1.9.1 p378 - pass
+     * This is the version I developed Tomato against.
+   * 1.9.2 preview3 - pass
+ * Python 2.4+. This is used to compile the bundled V8.
+</pre>
+<p>
+Note: I&#8216;ve not tested it on Windows, but if you can satisfy the above
+requirements and have a C++ compiler (gcc recommended), it should work.
+Make sure Python is in your path.
+</p>
+<h2>Installation</h2>
+<p>
+To install the latest and greatest prerelease:
+</p>
+<pre>
+  gem install tomato --pre
+</pre>
+<p>
+To install the current stable release:
+</p>
+<pre>
+  gem install tomato
+</pre>
+<p>
+That should be all there is to it. The package is pretty large as gems go,
+so be patient.
+</p>
+<h2>Performance</h2>
+<pre>
+  ruby-1.9.1-p378 &gt; javascript = &lt;&lt;-end_js
+  ruby-1.9.1-p378&quot;&gt;   var str = &quot;&quot;;
+  ruby-1.9.1-p378&quot;&gt;   for (var i = 0; i &lt; 1000000; i++)
+  ruby-1.9.1-p378&quot;&gt;     str = 'a';
+  ruby-1.9.1-p378&quot;&gt; end_js
+  ruby-1.9.1-p378 &gt; require 'benchmark'
+  ruby-1.9.1-p378 &gt; require 'tomato'
+  ruby-1.9.1-p378 &gt; t = Tomato.new
+  ruby-1.9.1-p378 &gt;
+  ruby-1.9.1-p378 &gt; # Setup complete, let's start the test
+  ruby-1.9.1-p378 &gt; puts Benchmark.measure { for i in 1..1000000; str = 'a'; end }
+  ruby-1.9.1-p378 &gt;  0.350000   0.000000   0.350000 (  0.358106)
+  ruby-1.9.1-p378 &gt;
+  ruby-1.9.1-p378 &gt; puts Benchmark.measure { t.run(javascript) }
+  ruby-1.9.1-p378 &gt;  0.010000   0.000000   0.010000 (  0.012603)
+</pre>
+<p>
+&#8216;Nuff said.
+</p>
+<p>
+Since V8&#8216;s JavaScript code is compiled into byte code, this can have
+a positive impact on performance in some applications. Just translate your
+code to JavaScript and let <a href="../classes/Tomato.html">Tomato</a>
+compile it into byte code.
+</p>
+<h2>Note on Patches/Pull Requests</h2>
+<ul>
+<li>Fork the project.
+
+</li>
+<li>Make your feature addition or bug fix.
+
+</li>
+<li>Add tests for it. This is important so I don&#8216;t break it in a future
+version unintentionally.
+
+</li>
+<li>Commit, do not mess with rakefile, version, or history. (if you want to
+have your own version, that is fine but bump version in a commit by itself
+I can ignore when I pull)
+
+</li>
+<li>Send me a pull request. Bonus points for topic branches.
+
+</li>
+</ul>
+<h2>Copyright</h2>
+<p>
+Copyright (c) 2010 Colin MacKenzie IV. See LICENSE for details.
+</p>
+
+    </div>
+
+
+   </div>
+
+
+  </div>
+
+
+    <!-- if includes -->
+
+    <div id="section">
+
+
+
+
+
+      
+
+
+    <!-- if method_list -->
+
+
+  </div>
+
+
+<div id="validator-badges">
+  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
+</div>
+
+</body>
+</html>
